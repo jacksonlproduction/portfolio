@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jackson Luria Production</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --bg2: #0f0f0f;
+      --bg3: #161616;
+      --bg4: #1e1e1e;
+      --white: #ffffff;
+      --gray-l: #cccccc;
+      --gray: #888888;
+      --gray-d: #444444;
+      --border: rgba(255,255,255,0.1);
+      --border-h: rgba(255,255,255,0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ══════════════════════════════════════════
+       NAV
+    ══════════════════════════════════════════ */
+    nav {
+      position: fixed;
+      inset: 0 0 auto 0;
+      z-index: 200;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.4rem 4rem;
+      transition: background 0.4s, backdrop-filter 0.4s, border-color 0.4s;
+      border-bottom: 1px solid transparent;
+    }
+    nav.scrolled {
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(16px);
+      border-color: var(--border);
+    }
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.14em;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      font-size: 0.73rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: color 0.25s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    /* ══════════════════════════════════════════
+       HERO — VIDEO BACKGROUND
+    ══════════════════════════════════════════ */
+    #hero {
+      position: relative;
+      height: 100vh;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* Video bg — drop your .mp4 file path into the <source> tag below */
+    .hero-video {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Fallback gradient shown if video hasn't loaded / no src */
+    .hero-fallback {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 90% 80% at 50% 30%, #202020 0%, #0a0a0a 70%);
+      z-index: 0;
+    }
+    /* subtle scanlines for cinematic texture */
+    .hero-fallback::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* Dark gradient overlay so text is always readable */
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.85) 100%);
+      z-index: 1;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 1rem;
+    }
+    .hero-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(5rem, 14vw, 13rem);
+      line-height: 0.88;
+      letter-spacing: 0.04em;
+      color: var(--white);
+    }
+    .hero-word {
+      display: block;
+    }
+    .hero-production {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.4rem, 3.5vw, 3rem);
+      letter-spacing: 0.6em;
+      color: rgba(255,255,255,0.6);
+      margin-top: 0.6rem;
+      text-transform: uppercase;
+    }
+    .hero-rule {
+      width: 80px;
+      height: 1px;
+      background: rgba(255,255,255,0.25);
+      margin: 1.8rem auto;
+    }
+    .hero-sub {
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* scroll indicator */
+    .hero-scroll {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0.35;
+    }
+    .hero-scroll span { font-size: 0.6rem; letter-spacing: 0.25em; text-transform: uppercase; }
+    .scroll-line {
+      width: 1px; height: 50px;
+      background: linear-gradient(to bottom, white, transparent);
+      animation: scrollDrop 1.9s ease-in-out infinite;
+    }
+    @keyframes scrollDrop {
+      0%   { transform: scaleY(0); transform-origin: top; }
+      50%  { transform: scaleY(1); transform-origin: top; }
+      51%  { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* ══════════════════════════════════════════
+       SECTION BASE
+    ══════════════════════════════════════════ */
+    section { padding: 8rem 10vw; }
+    .sec-center { text-align: center; }
+    .section-eyebrow {
+      font-size: 0.68rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 0.7rem;
+    }
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.8rem, 5.5vw, 5rem);
+      letter-spacing: 0.05em;
+      line-height: 1;
+      color: var(--white);
+      margin-bottom: 1rem;
+    }
+    .section-rule {
+      width: 40px; height: 1px;
+      background: rgba(255,255,255,0.3);
+      margin-bottom: 3rem;
+    }
+    .rule-center { margin-left: auto; margin-right: auto; }
+
+    /* ══════════════════════════════════════════
+       MARQUEE / CLIENTS
+    ══════════════════════════════════════════ */
+    #clients {
+      padding: 5rem 0;
+      background: var(--bg2);
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .clients-header {
+      text-align: center;
+      padding: 0 10vw;
+      margin-bottom: 3rem;
+    }
+    .marquee-track { position: relative; overflow: hidden; }
+    .marquee-fade-l,
+    .marquee-fade-r {
+      position: absolute; top: 0; bottom: 0;
+      width: 160px; z-index: 2; pointer-events: none;
+    }
+    .marquee-fade-l { left: 0;  background: linear-gradient(to right, var(--bg2), transparent); }
+    .marquee-fade-r { right: 0; background: linear-gradient(to left,  var(--bg2), transparent); }
+    .marquee-inner {
+      display: flex; width: max-content;
+      animation: marquee 30s linear infinite;
+    }
+    .marquee-inner:hover { animation-play-state: paused; }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .logo-item {
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 3.5rem; height: 72px;
+      opacity: 0.35; transition: opacity 0.3s; flex-shrink: 0;
+    }
+    .logo-item:hover { opacity: 0.85; }
+    .logo-box {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.45rem; letter-spacing: 0.1em;
+      color: var(--white); white-space: nowrap;
+    }
+    .logo-mark {
+      width: 28px; height: 28px;
+      background: var(--white);
+      border-radius: 3px; flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════
+       HYPE EDITS
+    ══════════════════════════════════════════ */
+    #hype-edits {
+      background: var(--bg2);
+      text-align: center;
+      padding: 8rem 6vw;
+      border-top: 1px solid var(--border);
+    }
+
+    .hype-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.4rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Force each Instagram embed to a consistent width */
+    .hype-item {
+      flex: 0 0 clamp(280px, 30%, 340px);
+      min-width: 280px;
+    }
+
+    /* Override Instagram's default white background/border with something darker */
+    .hype-item .instagram-media {
+      background: var(--bg3) !important;
+      border-color: var(--border) !important;
+      min-width: unset !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* Placeholder card shown before Instagram script loads */
+    .ig-placeholder {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding-bottom: 177%; /* 9:16 aspect */
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .ig-placeholder-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .ig-placeholder-inner svg { width: 28px; height: 28px; opacity: 0.3; }
+
+    .hype-note {
+      margin-top: 2rem;
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.18);
+      text-transform: uppercase;
+    }
+
+    /* ══════════════════════════════════════════
+       SHOWREEL
+    ══════════════════════════════════════════ */
+    #showreel {
+      background: var(--bg);
+      text-align: center;
+      padding: 8rem 6vw;
+    }
+    .showreel-wrap {
+      position: relative;
+      display: inline-block;
+      width: 100%; max-width: 1060px;
+      margin-top: 0.5rem;
+    }
+    .showreel-border {
+      position: absolute; inset: -1px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, transparent 50%, rgba(255,255,255,0.15) 100%);
+      z-index: 0;
+    }
+    .video-wrap {
+      position: relative; padding-top: 56.25%;
+      background: #000; z-index: 1;
+    }
+    .video-wrap iframe,
+    .video-ph {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; border: none;
+    }
+    .video-ph {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1.1rem;
+      background: #0e0e0e; cursor: pointer;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.78rem; letter-spacing: 0.12em;
+    }
+    .play-ring {
+      width: 70px; height: 70px; border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.4);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .video-ph:hover .play-ring { background: white; border-color: white; }
+    .video-ph:hover .play-ring svg { color: #000; }
+    .play-ring svg { color: rgba(255,255,255,0.7); }
+    .showreel-caption {
+      margin-top: 1.5rem;
+      font-size: 0.7rem; letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.2); text-transform: uppercase;
+    }
+
+    /* ══════════════════════════════════════════
+       WORK / GALLERY
+    ══════════════════════════════════════════ */
+    #work { background: var(--bg2); text-align: center; }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.2rem;
+      text-align: left;
+    }
+    .gallery-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      transition: border-color 0.3s, transform 0.3s;
+      cursor: pointer; overflow: hidden;
+    }
+    .gallery-card:hover { border-color: var(--border-h); transform: translateY(-4px); }
+    .card-thumb {
+      position: relative; padding-top: 58%; overflow: hidden;
+    }
+    .card-thumb-inner {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.5s;
+    }
+    .gallery-card:hover .card-thumb-inner { transform: scale(1.04); }
+    .card-thumb-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.08);
+    }
+    .card-play-ov {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.25);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .gallery-card:hover .card-play-ov { opacity: 1; }
+    .card-play-icon {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-body { padding: 1.2rem 1.4rem 1.5rem; }
+    .card-type {
+      font-size: 0.65rem; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--gray);
+      margin-bottom: 0.3rem;
+    }
+    .card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem; letter-spacing: 0.06em; color: var(--white);
+    }
+    .card-desc {
+      margin-top: 0.45rem; font-size: 0.8rem;
+      color: var(--gray); line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════
+       GEAR SECTION
+    ══════════════════════════════════════════ */
+    #gear {
+      background: var(--bg);
+      text-align: center;
+      padding: 8rem 0 6rem;
+    }
+    #gear .sec-header { padding: 0 10vw; }
+
+    .gear-carousel-wrap {
+      position: relative;
+      margin-top: 3.5rem;
+    }
+
+    /* Side arrows */
+    .gear-arrow {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      z-index: 10;
+      width: 52px; height: 52px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+    .gear-arrow:hover:not(:disabled) {
+      border-color: var(--border-h);
+      color: white;
+      background: rgba(255,255,255,0.04);
+    }
+    .gear-arrow:disabled { opacity: 0.2; cursor: default; }
+    .gear-arrow svg { width: 20px; height: 20px; }
+    .gear-prev { left: 2vw; }
+    .gear-next { right: 2vw; }
+
+    /* Slide container */
+    .gear-slides {
+      width: 100%;
+      overflow: hidden;
+    }
+    .gear-slide {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 4rem;
+      padding: 0 10vw;
+      animation: gearFadeIn 0.45s ease;
+    }
+    .gear-slide.active { display: grid; }
+    @keyframes gearFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Model viewer */
+    .gear-model-col {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      max-height: 480px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Grid background for model area */
+    .model-bg {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      border: 1px solid var(--border);
+    }
+    .model-bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 40%, var(--bg) 100%);
+    }
+
+    /* The CSS camera placeholder */
+    .cam-placeholder {
+      position: relative; z-index: 2;
+      animation: camFloat 5s ease-in-out infinite;
+    }
+    @keyframes camFloat {
+      0%, 100% { transform: translateY(0) rotateY(-8deg) rotateX(3deg); }
+      50%       { transform: translateY(-10px) rotateY(8deg) rotateX(-3deg); }
+    }
+    .cam-body {
+      width: 220px; height: 155px;
+      background: #1c1c1c;
+      border: 1.5px solid #3a3a3a;
+      border-radius: 6px;
+      position: relative;
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+      perspective: 500px;
+    }
+    /* Viewfinder hump */
+    .cam-hump {
+      position: absolute;
+      top: -22px; right: 30px;
+      width: 70px; height: 22px;
+      background: #1c1c1c;
+      border: 1.5px solid #3a3a3a;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+    }
+    /* Hot shoe groove */
+    .cam-hump::after {
+      content: '';
+      position: absolute;
+      top: 6px; left: 50%; transform: translateX(-50%);
+      width: 36px; height: 4px;
+      background: #111;
+      border-radius: 1px;
+    }
+    /* Lens assembly */
+    .cam-lens {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      left: 24px;
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: #111;
+      border: 3px solid #3a3a3a;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.05);
+    }
+    .cam-lens-inner {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: radial-gradient(circle at 36% 32%, #2a2a2a, #080808);
+      border: 2px solid #2a2a2a;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cam-lens-glass {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 28%, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    /* Top buttons */
+    .cam-btn {
+      position: absolute;
+      top: 12px; border-radius: 50%;
+      background: #2a2a2a; border: 1px solid #444;
+    }
+    .cam-btn-shutter {
+      width: 22px; height: 22px; right: 44px;
+      background: #333;
+    }
+    .cam-btn-dial {
+      width: 32px; height: 12px; border-radius: 3px;
+      right: 80px; top: 14px;
+    }
+    /* Screen */
+    .cam-screen {
+      position: absolute;
+      right: 14px; top: 50%; transform: translateY(-50%);
+      width: 60px; height: 42px;
+      background: #0d0d0d;
+      border: 1.5px solid #333;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .cam-screen::after {
+      content: 'REC';
+      position: absolute;
+      top: 4px; left: 50%; transform: translateX(-50%);
+      font-size: 8px; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.2);
+      font-family: 'Inter', monospace;
+    }
+    /* Tripod mount indicator */
+    .cam-tripod-mount {
+      position: absolute;
+      bottom: -10px; left: 50%; transform: translateX(-50%);
+      width: 12px; height: 12px;
+      background: #2a2a2a;
+      border: 1.5px solid #444;
+      border-radius: 50%;
+    }
+
+    /* Floating spec tags */
+    .model-tags {
+      position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    }
+    .mtag {
+      position: absolute;
+      font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      background: rgba(20,20,20,0.9);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 0.3rem 0.65rem;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+    }
+    .mtag::before {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+    }
+    .mtag.tl { top: 18%; left: 6%; }
+    .mtag.tl::before { bottom: -8px; right: -8px; }
+    .mtag.tr { top: 14%; right: 6%; text-align: right; }
+    .mtag.tr::before { bottom: -8px; left: -8px; }
+    .mtag.bl { bottom: 18%; left: 6%; }
+    .mtag.bl::before { top: -8px; right: -8px; }
+    .mtag.br { bottom: 14%; right: 6%; text-align: right; }
+    .mtag.br::before { top: -8px; left: -8px; }
+
+    .model-label {
+      position: absolute;
+      bottom: 10px; left: 50%; transform: translateX(-50%);
+      font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: rgba(255,255,255,0.15); z-index: 3; white-space: nowrap;
+    }
+
+    /* Gear info column */
+    .gear-info-col { text-align: left; }
+    .gear-counter {
+      font-size: 0.65rem; letter-spacing: 0.25em;
+      color: var(--gray); margin-bottom: 0.8rem;
+    }
+    .gear-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.4rem, 4vw, 3.8rem);
+      letter-spacing: 0.05em; line-height: 1;
+      color: var(--white); margin-bottom: 0.4rem;
+    }
+    .gear-sub {
+      font-size: 0.8rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--gray);
+      margin-bottom: 1.2rem;
+    }
+    .gear-rule { width: 32px; height: 1px; background: var(--gray-d); margin-bottom: 1.4rem; }
+    .gear-desc {
+      font-size: 0.9rem; color: rgba(255,255,255,0.55);
+      line-height: 1.75; margin-bottom: 2rem; max-width: 400px;
+    }
+
+    /* Tripod badge */
+    .tripod-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 0.4rem 0.9rem;
+      font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 1.8rem;
+    }
+    .tripod-badge svg { width: 14px; height: 14px; opacity: 0.7; }
+
+    /* Specs grid */
+    .gear-specs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem 1.5rem;
+    }
+    .spec-item { border-top: 1px solid var(--border); padding-top: 0.6rem; }
+    .spec-label {
+      font-size: 0.62rem; letter-spacing: 0.18em;
+      text-transform: uppercase; color: var(--gray);
+      margin-bottom: 0.2rem;
+    }
+    .spec-val { font-size: 0.85rem; color: var(--white); font-weight: 400; }
+
+    /* Dots */
+    .gear-dots {
+      display: flex; justify-content: center; gap: 0.6rem;
+      margin-top: 3rem; padding: 0 10vw;
+    }
+    .gdot {
+      width: 24px; height: 2px;
+      background: rgba(255,255,255,0.2);
+      border: none; cursor: pointer;
+      transition: background 0.25s, width 0.25s;
+      padding: 0;
+    }
+    .gdot.active { background: white; width: 40px; }
+
+    /* ══════════════════════════════════════════
+       TESTIMONIALS
+    ══════════════════════════════════════════ */
+    #testimonials { background: var(--bg2); text-align: center; }
+    .testi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.2rem; text-align: left;
+    }
+    .testi-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 2rem 1.8rem 1.8rem;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+    .testi-card:hover { border-color: var(--border-h); }
+    .testi-q {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4.5rem; line-height: 1;
+      color: rgba(255,255,255,0.08);
+      position: absolute; top: 1rem; left: 1.4rem;
+    }
+    .testi-body {
+      font-size: 0.9rem; color: rgba(255,255,255,0.65);
+      line-height: 1.75; margin-top: 1.6rem;
+    }
+    .testi-foot {
+      margin-top: 1.6rem; display: flex; align-items: center; gap: 0.9rem;
+    }
+    .testi-av {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--bg4); border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .testi-name { font-weight: 500; font-size: 0.83rem; }
+    .testi-role { font-size: 0.72rem; color: var(--gray); margin-top: 0.1rem; }
+
+    /* ══════════════════════════════════════════
+       CONTACT
+    ══════════════════════════════════════════ */
+    #contact { background: var(--bg); text-align: center; }
+    .contact-email {
+      display: inline-block;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.6rem, 3.5vw, 2.5rem);
+      letter-spacing: 0.1em;
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 4px;
+      transition: border-color 0.3s;
+      margin-bottom: 3rem;
+    }
+    .contact-email:hover { border-color: white; }
+    .contact-sub {
+      font-size: 0.88rem; color: rgba(255,255,255,0.4);
+      max-width: 440px; margin: 0 auto 2.5rem; line-height: 1.7;
+    }
+    .social-links {
+      display: flex; justify-content: center;
+      gap: 0.8rem; flex-wrap: wrap;
+    }
+    .social-link {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1.4rem;
+      border: 1px solid var(--border);
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase;
+      transition: border-color 0.25s, color 0.25s;
+    }
+    .social-link:hover { border-color: var(--border-h); color: white; }
+    .social-link svg { width: 14px; height: 14px; }
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 2rem 10vw;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.1rem; letter-spacing: 0.14em; color: white;
+    }
+    .footer-copy { font-size: 0.72rem; color: var(--gray); }
+
+    /* ══════════════════════════════════════════
+       SCROLL FADE-IN
+    ══════════════════════════════════════════ */
+    .fade-up {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.d1 { transition-delay: 0.1s; }
+    .fade-up.d2 { transition-delay: 0.2s; }
+    .fade-up.d3 { transition-delay: 0.3s; }
+    .fade-up.d4 { transition-delay: 0.4s; }
+
+    /* ══════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .gear-slide.active { grid-template-columns: 1fr; }
+      .gear-model-col { max-height: 360px; width: 100%; }
+      .gear-info-col { text-align: center; padding: 0 2rem; }
+      .gear-rule { margin: 0 auto 1.4rem; }
+      .gear-desc { margin: 0 auto 2rem; }
+      .gear-specs { max-width: 380px; margin: 0 auto; }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 1.2rem 1.5rem; }
+      .nav-links { gap: 1.5rem; }
+      section { padding: 5rem 6vw; }
+    }
+    @media (max-width: 480px) {
+      .nav-links { display: none; }
+      .gear-arrow { display: none; }
+      .gear-slide.active { padding: 0 6vw; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════
+  NAV
+═════════════════════════════════════════════ -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo">JL</a>
+  <ul class="nav-links">
+    <li><a href="#showreel">Showreel</a></li>
+    <li><a href="#hype-edits">Hype Edits</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#gear">Gear</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ════════════════════════════════════════════
+  HERO — VIDEO BACKGROUND
+  To use your own video: place your .mp4 file in this folder
+  and update the <source src="..."> tag below.
+═════════════════════════════════════════════ -->
+<section id="hero">
+  <!-- Fallback background (shown until video loads) -->
+  <div class="hero-fallback"></div>
+
+  <!-- VIDEO — uncomment source tag and add your file path -->
+  <video class="hero-video" autoplay loop muted playsinline>
+    <!-- <source src="your-reel.mp4" type="video/mp4"> -->
+  </video>
+
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <p class="hero-eyebrow">Video Content Creator</p>
+    <h1 class="hero-name">
+      <span class="hero-word">Jackson</span>
+      <span class="hero-word">Luria</span>
+    </h1>
+    <div class="hero-rule"></div>
+    <p class="hero-production">Production</p>
+    <p class="hero-sub" style="margin-top:1.2rem;">Crafting stories for brands that demand the best</p>
+  </div>
+
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+  CLIENTS — MARQUEE
+═════════════════════════════════════════════ -->
+<section id="clients">
+  <div class="clients-header">
+    <p class="section-eyebrow fade-up">Trusted By</p>
+    <h2 class="section-title fade-up d1">Proud Partnerships</h2>
+  </div>
+  <div class="marquee-track">
+    <div class="marquee-fade-l"></div>
+    <div class="marquee-fade-r"></div>
+    <div class="marquee-inner">
+      <!-- Set A -->
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark"></div>BrandAlpha</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50%;"></div>NovaCorp</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="transform:rotate(45deg);border-radius:2px;"></div>ZenithCo</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50% 0 50% 0;"></div>PeakMedia</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:0 50% 0 50%;"></div>LuxBrand</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;"></div>ApexGroup</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark"></div>StudioX</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50%;"></div>CreativeHub</div></div>
+      <!-- Set B — duplicate for seamless loop -->
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark"></div>BrandAlpha</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50%;"></div>NovaCorp</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="transform:rotate(45deg);border-radius:2px;"></div>ZenithCo</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50% 0 50% 0;"></div>PeakMedia</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:0 50% 0 50%;"></div>LuxBrand</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="clip-path:polygon(50% 0%,100% 100%,0% 100%);border-radius:0;"></div>ApexGroup</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark"></div>StudioX</div></div>
+      <div class="logo-item"><div class="logo-box"><div class="logo-mark" style="border-radius:50%;"></div>CreativeHub</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+  HYPE EDITS
+  Note: Instagram embeds require a hosted URL to load.
+  Opening as a local file will show placeholders only.
+  Host on GitHub Pages, Netlify, etc. for full playback.
+═════════════════════════════════════════════ -->
+<section id="hype-edits">
+  <p class="section-eyebrow fade-up">On The Pitch</p>
+  <h2 class="section-title fade-up d1">Hype Edits</h2>
+  <div class="section-rule rule-center fade-up d2" style="margin-bottom:3.5rem;"></div>
+
+  <div class="hype-grid">
+
+    <div class="hype-item fade-up d1">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/reel/DPZzE9oAZnQ/"
+        data-instgrm-version="14"
+        style="background:#161616;border:1px solid rgba(255,255,255,0.1);border-radius:0;margin:0;min-width:unset;width:100%;max-width:100%;">
+        <div style="padding:16px;">
+          <a href="https://www.instagram.com/reel/DPZzE9oAZnQ/" target="_blank"
+            style="display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#222;border:1px solid rgba(255,255,255,0.15);"></div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);">View on Instagram</div>
+          </a>
+        </div>
+      </blockquote>
+    </div>
+
+    <div class="hype-item fade-up d2">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/reel/DQPwIgjkvpk/"
+        data-instgrm-version="14"
+        style="background:#161616;border:1px solid rgba(255,255,255,0.1);border-radius:0;margin:0;min-width:unset;width:100%;max-width:100%;">
+        <div style="padding:16px;">
+          <a href="https://www.instagram.com/reel/DQPwIgjkvpk/" target="_blank"
+            style="display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#222;border:1px solid rgba(255,255,255,0.15);"></div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);">View on Instagram</div>
+          </a>
+        </div>
+      </blockquote>
+    </div>
+
+    <div class="hype-item fade-up d3">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/reel/DN_imp0kqLS/"
+        data-instgrm-version="14"
+        style="background:#161616;border:1px solid rgba(255,255,255,0.1);border-radius:0;margin:0;min-width:unset;width:100%;max-width:100%;">
+        <div style="padding:16px;">
+          <a href="https://www.instagram.com/reel/DN_imp0kqLS/" target="_blank"
+            style="display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#222;border:1px solid rgba(255,255,255,0.15);"></div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);">View on Instagram</div>
+          </a>
+        </div>
+      </blockquote>
+    </div>
+
+    <div class="hype-item fade-up d2">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/reel/DRny3LxD7AY/"
+        data-instgrm-version="14"
+        style="background:#161616;border:1px solid rgba(255,255,255,0.1);border-radius:0;margin:0;min-width:unset;width:100%;max-width:100%;">
+        <div style="padding:16px;">
+          <a href="https://www.instagram.com/reel/DRny3LxD7AY/" target="_blank"
+            style="display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#222;border:1px solid rgba(255,255,255,0.15);"></div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);">View on Instagram</div>
+          </a>
+        </div>
+      </blockquote>
+    </div>
+
+    <div class="hype-item fade-up d3">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/reel/DRIsOJwknrP/"
+        data-instgrm-version="14"
+        style="background:#161616;border:1px solid rgba(255,255,255,0.1);border-radius:0;margin:0;min-width:unset;width:100%;max-width:100%;">
+        <div style="padding:16px;">
+          <a href="https://www.instagram.com/reel/DRIsOJwknrP/" target="_blank"
+            style="display:flex;flex-direction:column;align-items:center;gap:12px;text-decoration:none;">
+            <div style="width:42px;height:42px;border-radius:50%;background:#222;border:1px solid rgba(255,255,255,0.15);"></div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.3);">View on Instagram</div>
+          </a>
+        </div>
+      </blockquote>
+    </div>
+
+  </div>
+  <p class="hype-note fade-up">Embeds require a hosted URL — deploy to see full players</p>
+</section>
+
+<!-- Instagram embed script (loads all blockquotes on the page) -->
+<script async src="//www.instagram.com/embed.js"></script>
+
+<!-- ════════════════════════════════════════════
+  SHOWREEL
+═════════════════════════════════════════════ -->
+<section id="showreel">
+  <p class="section-eyebrow fade-up">Featured</p>
+  <h2 class="section-title fade-up d1">The Reel</h2>
+  <div class="section-rule rule-center fade-up d2"></div>
+  <div class="showreel-wrap fade-up d2">
+    <div class="showreel-border"></div>
+    <div class="video-wrap">
+      <!--
+        REPLACE with your real embed:
+        <iframe src="https://www.youtube.com/embed/YOUR_ID?rel=0" allowfullscreen></iframe>
+      -->
+      <div class="video-ph" onclick="this.innerHTML='<iframe src=\'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1\' allow=\'autoplay\' allowfullscreen style=\'position:absolute;inset:0;width:100%;height:100%;border:none;\'></iframe>'">
+        <div class="play-ring">
+          <svg fill="none" viewBox="0 0 24 24" width="22" height="22">
+            <polygon points="6,4 20,12 6,20" fill="currentColor"/>
+          </svg>
+        </div>
+        <span style="letter-spacing:0.14em;">Play Showreel</span>
+      </div>
+    </div>
+  </div>
+  <p class="showreel-caption fade-up">Replace the embed URL with your YouTube or Vimeo link</p>
+</section>
+
+<!-- ════════════════════════════════════════════
+  WORK / GALLERY
+═════════════════════════════════════════════ -->
+<section id="work">
+  <p class="section-eyebrow fade-up">Portfolio</p>
+  <h2 class="section-title fade-up d1">Selected Work</h2>
+  <div class="section-rule rule-center fade-up d2" style="margin-bottom:3.5rem;"></div>
+  <div class="gallery-grid">
+
+    <div class="gallery-card fade-up d1">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#161614,#222218);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Brand Video</p>
+        <h3 class="card-title">Client Name — Launch Campaign</h3>
+        <p class="card-desc">Full production brand video for product launch, driving 2M+ impressions across digital channels.</p>
+      </div>
+    </div>
+
+    <div class="gallery-card fade-up d2">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#141618,#181e22);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Social Content</p>
+        <h3 class="card-title">Client Name — Instagram Series</h3>
+        <p class="card-desc">12-part short-form series for Instagram Reels, growing account engagement by 340%.</p>
+      </div>
+    </div>
+
+    <div class="gallery-card fade-up d3">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#181418,#211520);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Documentary</p>
+        <h3 class="card-title">Client Name — Origin Story</h3>
+        <p class="card-desc">Cinematic brand documentary telling the founding story, aired on YouTube and internal channels.</p>
+      </div>
+    </div>
+
+    <div class="gallery-card fade-up d1">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#141818,#162020);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Event Coverage</p>
+        <h3 class="card-title">Client Name — Annual Conference</h3>
+        <p class="card-desc">Full event recap and highlight reel distributed to 10K+ subscribers and stakeholders.</p>
+      </div>
+    </div>
+
+    <div class="gallery-card fade-up d2">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#181614,#221e12);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Product Video</p>
+        <h3 class="card-title">Client Name — E-Commerce Ads</h3>
+        <p class="card-desc">Set of 6 product videos for paid social ads, achieving 4.2× ROAS across Meta platforms.</p>
+      </div>
+    </div>
+
+    <div class="gallery-card fade-up d3">
+      <div class="card-thumb">
+        <div class="card-thumb-inner" style="background:linear-gradient(135deg,#151418,#1c1522);"><span class="card-thumb-label">Project</span></div>
+        <div class="card-play-ov"><div class="card-play-icon"><svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="#000"/></svg></div></div>
+      </div>
+      <div class="card-body">
+        <p class="card-type">Testimonials</p>
+        <h3 class="card-title">Client Name — Customer Stories</h3>
+        <p class="card-desc">Five-video testimonial series used across sales decks and landing pages.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+  GEAR — INTERACTIVE CAROUSEL
+═════════════════════════════════════════════ -->
+<section id="gear">
+  <div class="sec-header">
+    <p class="section-eyebrow fade-up">The Arsenal</p>
+    <h2 class="section-title fade-up d1">My Gear</h2>
+    <div class="section-rule rule-center fade-up d2"></div>
+  </div>
+
+  <div class="gear-carousel-wrap">
+    <!-- Prev / Next -->
+    <button class="gear-arrow gear-prev" id="gearPrev" aria-label="Previous camera">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <button class="gear-arrow gear-next" id="gearNext" aria-label="Next camera">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+
+    <!-- Slides -->
+    <div class="gear-slides" id="gearSlides">
+
+      <!-- ── SLIDE 0: Blackmagic 6K Pro ── -->
+      <div class="gear-slide active" data-index="0">
+        <div class="gear-model-col">
+          <div class="model-bg"></div>
+          <!-- CSS Camera -->
+          <div class="cam-placeholder">
+            <div class="cam-body">
+              <div class="cam-hump"></div>
+              <div class="cam-lens">
+                <div class="cam-lens-inner">
+                  <div class="cam-lens-glass"></div>
+                </div>
+              </div>
+              <div class="cam-btn cam-btn-shutter"></div>
+              <div class="cam-btn cam-btn-dial"></div>
+              <div class="cam-screen"></div>
+            </div>
+          </div>
+          <!-- Floating tags -->
+          <div class="model-tags">
+            <div class="mtag tl">Cinema Sensor</div>
+            <div class="mtag tr">RAW Recording</div>
+            <div class="mtag bl">13 Stop DR</div>
+            <div class="mtag br">Built-in ND</div>
+          </div>
+          <div class="model-label">3D model — coming soon</div>
+        </div>
+        <div class="gear-info-col">
+          <p class="gear-counter">01 / 03</p>
+          <h3 class="gear-name">Blackmagic<br>6K Pro</h3>
+          <p class="gear-sub">Cinema Powerhouse</p>
+          <div class="gear-rule"></div>
+          <p class="gear-desc">The go-to for high-end productions. Blackmagic RAW in 6K, built-in ND filters, and 13 stops of dynamic range — unmatched latitude in any light.</p>
+          <div class="gear-specs">
+            <div class="spec-item"><p class="spec-label">Sensor</p><p class="spec-val">6K Super 35</p></div>
+            <div class="spec-item"><p class="spec-label">Format</p><p class="spec-val">Blackmagic RAW</p></div>
+            <div class="spec-item"><p class="spec-label">Dynamic Range</p><p class="spec-val">13 Stops</p></div>
+            <div class="spec-item"><p class="spec-label">ND Filters</p><p class="spec-val">Built-in 2 / 4 / 6 Stop</p></div>
+            <div class="spec-item"><p class="spec-label">ISO Range</p><p class="spec-val">200 – 25,600</p></div>
+            <div class="spec-item"><p class="spec-label">Lens Mount</p><p class="spec-val">EF Mount</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SLIDE 1: LUMIX S9 ── -->
+      <div class="gear-slide" data-index="1">
+        <div class="gear-model-col">
+          <div class="model-bg"></div>
+          <div class="cam-placeholder">
+            <div class="cam-body" style="width:170px;height:130px;">
+              <div class="cam-hump" style="width:55px;right:22px;"></div>
+              <div class="cam-lens" style="width:72px;height:72px;left:18px;">
+                <div class="cam-lens-inner" style="width:50px;height:50px;">
+                  <div class="cam-lens-glass" style="width:22px;height:22px;"></div>
+                </div>
+              </div>
+              <div class="cam-btn cam-btn-shutter" style="width:18px;height:18px;right:36px;"></div>
+              <div class="cam-btn cam-btn-dial" style="width:26px;right:60px;"></div>
+              <div class="cam-screen" style="width:50px;height:34px;right:10px;"></div>
+              <div class="cam-tripod-mount"></div>
+            </div>
+          </div>
+          <div class="model-tags">
+            <div class="mtag tl">Full Frame</div>
+            <div class="mtag tr">6K Video</div>
+            <div class="mtag bl">Ultra Compact</div>
+            <div class="mtag br">Real-time LUT</div>
+          </div>
+          <div class="model-label">3D model — coming soon</div>
+        </div>
+        <div class="gear-info-col">
+          <p class="gear-counter">02 / 03</p>
+          <h3 class="gear-name">LUMIX<br>S9</h3>
+          <p class="gear-sub">Full-Frame. Featherlight.</p>
+          <div class="gear-rule"></div>
+          <p class="gear-desc">The world's smallest full-frame camera. Real-time LUT display brings your color grade to life in-camera — built for run-and-gun without compromise.</p>
+          <!-- Tripod badge -->
+          <div class="tripod-badge" style="margin-bottom:1.8rem;">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v4m0 0L8 11m4-4l4 4M8 11H4l2 9h12l2-9h-4M8 11l-2 9m10-9l2 9M12 7v14"/>
+            </svg>
+            Tripod Compatible
+          </div>
+          <div class="gear-specs">
+            <div class="spec-item"><p class="spec-label">Sensor</p><p class="spec-val">Full Frame 24.2MP</p></div>
+            <div class="spec-item"><p class="spec-label">Video</p><p class="spec-val">6K Open Gate</p></div>
+            <div class="spec-item"><p class="spec-label">Color</p><p class="spec-val">Real-time LUT</p></div>
+            <div class="spec-item"><p class="spec-label">Body Weight</p><p class="spec-val">293g</p></div>
+            <div class="spec-item"><p class="spec-label">Mount</p><p class="spec-val">L-Mount</p></div>
+            <div class="spec-item"><p class="spec-label">Tripod</p><p class="spec-val">Compatible</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SLIDE 2: LUMIX S5 ── -->
+      <div class="gear-slide" data-index="2">
+        <div class="gear-model-col">
+          <div class="model-bg"></div>
+          <div class="cam-placeholder">
+            <div class="cam-body" style="width:200px;height:148px;">
+              <div class="cam-hump" style="width:65px;right:28px;"></div>
+              <div class="cam-lens" style="width:84px;height:84px;left:22px;">
+                <div class="cam-lens-inner" style="width:58px;height:58px;">
+                  <div class="cam-lens-glass" style="width:26px;height:26px;"></div>
+                </div>
+              </div>
+              <div class="cam-btn cam-btn-shutter" style="right:42px;"></div>
+              <div class="cam-btn cam-btn-dial" style="right:76px;"></div>
+              <div class="cam-screen" style="width:56px;height:38px;right:12px;"></div>
+              <div class="cam-tripod-mount"></div>
+            </div>
+          </div>
+          <div class="model-tags">
+            <div class="mtag tl">5-Axis IBIS</div>
+            <div class="mtag tr">4K 10-bit</div>
+            <div class="mtag bl">Weather Sealed</div>
+            <div class="mtag br">Dual Native ISO</div>
+          </div>
+          <div class="model-label">3D model — coming soon</div>
+        </div>
+        <div class="gear-info-col">
+          <p class="gear-counter">03 / 03</p>
+          <h3 class="gear-name">LUMIX<br>S5</h3>
+          <p class="gear-sub">Low-Light Legend.</p>
+          <div class="gear-rule"></div>
+          <p class="gear-desc">Dual native ISO and 5-axis IBIS make the S5 untouchable in challenging conditions. 4K 10-bit in a weather-sealed body ready for wherever the story takes you.</p>
+          <!-- Tripod badge -->
+          <div class="tripod-badge" style="margin-bottom:1.8rem;">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v4m0 0L8 11m4-4l4 4M8 11H4l2 9h12l2-9h-4M8 11l-2 9m10-9l2 9M12 7v14"/>
+            </svg>
+            Tripod Compatible
+          </div>
+          <div class="gear-specs">
+            <div class="spec-item"><p class="spec-label">Sensor</p><p class="spec-val">Full Frame 24.2MP</p></div>
+            <div class="spec-item"><p class="spec-label">Video</p><p class="spec-val">4K 10-bit 60fps</p></div>
+            <div class="spec-item"><p class="spec-label">Stabilisation</p><p class="spec-val">5-Axis IBIS</p></div>
+            <div class="spec-item"><p class="spec-label">ISO</p><p class="spec-val">Dual Native 640/4000</p></div>
+            <div class="spec-item"><p class="spec-label">Mount</p><p class="spec-val">L-Mount</p></div>
+            <div class="spec-item"><p class="spec-label">Tripod</p><p class="spec-val">Compatible</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /gear-slides -->
+
+    <!-- Dot navigation -->
+    <div class="gear-dots" id="gearDots">
+      <button class="gdot active" data-idx="0"></button>
+      <button class="gdot" data-idx="1"></button>
+      <button class="gdot" data-idx="2"></button>
+    </div>
+
+  </div><!-- /gear-carousel-wrap -->
+</section>
+
+<!-- ════════════════════════════════════════════
+  TESTIMONIALS
+═════════════════════════════════════════════ -->
+<section id="testimonials">
+  <p class="section-eyebrow fade-up">What They Say</p>
+  <h2 class="section-title fade-up d1">Client Stories</h2>
+  <div class="section-rule rule-center fade-up d2" style="margin-bottom:3.5rem;"></div>
+  <div class="testi-grid">
+
+    <div class="testi-card fade-up d1">
+      <div class="testi-q">"</div>
+      <p class="testi-body">Working with Jackson was a game-changer for our brand. The videos captured exactly who we are — our engagement tripled and clients say it's the best content they've seen in our space.</p>
+      <div class="testi-foot">
+        <div class="testi-av"></div>
+        <div><p class="testi-name">Sarah Mitchell</p><p class="testi-role">CEO, BrandAlpha</p></div>
+      </div>
+    </div>
+
+    <div class="testi-card fade-up d2">
+      <div class="testi-q">"</div>
+      <p class="testi-body">The level of storytelling and production quality is unlike anything we've had before. Our product launch video smashed every KPI. Absolute professional from concept to final cut.</p>
+      <div class="testi-foot">
+        <div class="testi-av"></div>
+        <div><p class="testi-name">James Okafor</p><p class="testi-role">Marketing Director, NovaCorp</p></div>
+      </div>
+    </div>
+
+    <div class="testi-card fade-up d3">
+      <div class="testi-q">"</div>
+      <p class="testi-body">I handed over the brief and came back to a final video that blew us away. Fast, creative, and incredibly easy to work with. We've already booked our next three projects.</p>
+      <div class="testi-foot">
+        <div class="testi-av"></div>
+        <div><p class="testi-name">Priya Sharma</p><p class="testi-role">Founder, ZenithCo</p></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+  CONTACT
+═════════════════════════════════════════════ -->
+<section id="contact">
+  <p class="section-eyebrow fade-up">Let's Work Together</p>
+  <h2 class="section-title fade-up d1">Start a Project</h2>
+  <div class="section-rule rule-center fade-up d2"></div>
+  <p class="contact-sub fade-up d2">Ready to create something unforgettable? Drop a line and let's talk about your vision.</p>
+  <a href="mailto:hello@jacksonluria.com" class="contact-email fade-up d3">hello@jacksonluria.com</a>
+  <div class="social-links fade-up d4">
+    <a href="#" class="social-link">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      Instagram
+    </a>
+    <a href="#" class="social-link">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+      LinkedIn
+    </a>
+    <a href="#" class="social-link">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      YouTube
+    </a>
+    <a href="#" class="social-link">
+      <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34v-7a8.27 8.27 0 0 0 4.84 1.55V6.41a4.85 4.85 0 0 1-1.07-.28z"/></svg>
+      TikTok
+    </a>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+  FOOTER
+═════════════════════════════════════════════ -->
+<footer>
+  <span class="footer-logo">Jackson Luria Production</span>
+  <span class="footer-copy">© 2026 Jackson Luria. All rights reserved.</span>
+</footer>
+
+<script>
+  // ── Nav scroll effect ──────────────────────────
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
+
+  // ── Scroll fade-in ─────────────────────────────
+  const fadeEls = document.querySelectorAll('.fade-up');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  fadeEls.forEach(el => io.observe(el));
+
+  // ── Gear carousel ──────────────────────────────
+  const slides = document.querySelectorAll('.gear-slide');
+  const dots   = document.querySelectorAll('.gdot');
+  const prev   = document.getElementById('gearPrev');
+  const next   = document.getElementById('gearNext');
+  let current  = 0;
+
+  function goTo(idx) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = idx;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    prev.disabled = current === 0;
+    next.disabled = current === slides.length - 1;
+  }
+
+  prev.addEventListener('click', () => { if (current > 0) goTo(current - 1); });
+  next.addEventListener('click', () => { if (current < slides.length - 1) goTo(current + 1); });
+  dots.forEach(d => d.addEventListener('click', () => goTo(+d.dataset.idx)));
+
+  // Keyboard navigation within gear section
+  document.addEventListener('keydown', (e) => {
+    const gearEl = document.getElementById('gear');
+    const rect = gearEl.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      if (e.key === 'ArrowLeft'  && current > 0)              goTo(current - 1);
+      if (e.key === 'ArrowRight' && current < slides.length - 1) goTo(current + 1);
+    }
+  });
+
+  // Initial state
+  goTo(0);
+</script>
+</body>
+</html>
