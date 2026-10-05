@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jackson Luria Open</title>
+<style>
+  /* EB Garamond (SIL OFL 1.1), inlined so this file is fully self-contained. */
+  @font-face { font-family: "JL Garamond"; src: url(data:font/ttf;base64,__FONT_ROMAN__) format("truetype"); font-weight: 400 800; font-style: normal; }
+  @font-face { font-family: "JL Garamond"; src: url(data:font/ttf;base64,__FONT_ITALIC__) format("truetype"); font-weight: 400 800; font-style: italic; }
+  html, body { margin: 0; height: 100%; background: #000; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  canvas { display: block; width: min(100vw, 177.7778vh); height: min(56.25vw, 100vh); }
+  #ui { position: fixed; left: 16px; bottom: 16px; font: 13px/1.4 system-ui, sans-serif; color: #fff; mix-blend-mode: difference; user-select: none; }
+  body.render #ui { display: none; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<div id="ui">Click or press space to play &middot; &larr; &rarr; to step frames</div>
+<script>
+/*
+ * Jackson Luria — 15s open.
+ * Every pixel is a pure function of t (seconds). No CSS transitions, no timers,
+ * no randomness: render(t) can be called for any t, in any order.
+ * Audio is composed in code and rendered offline from the same beat grid.
+ */
+'use strict';
+
+// ---------------------------------------------------------------- constants
+const W = 1920, H = 1080, CX = W / 2, CY = H / 2;
+const FPS = 60, DUR = 15;
+const BPM = 120, BEAT = 60 / BPM;
+const B = n => n * BEAT;                 // beat n -> seconds
+const TAU = Math.PI * 2;
+const FONT = '"JL Garamond"';
+const CLAUDE = '#D97757';                // the only colour, and it belongs to the product
+const BLACK = '#000', WHITE = '#fff';
+
+// ---------------------------------------------------------------- springs
+// Closed-form damped spring, 0 -> 1, released at t0. w = natural frequency,
+// z = damping ratio. z = 1 is critically damped (no bounce, the default).
+function sp(t, t0, w = 12, z = 1) {
+  const x = t - t0;
+  if (x <= 0) return 0;
+  if (z >= 1) return 1 - (1 + w * x) * Math.exp(-w * x);
+  const wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * x) * (Math.cos(wd * x) + (z * w / wd) * Math.sin(wd * x));
+}
+// A value driven by a chain of springs. Each key retargets the value; because
+// the springs sum, a new move can start before the previous one has settled.
+function track(t, v0, keys) {
+  let v = v0, prev = v0;
+  for (const [t0, target, w, z] of keys) { v += (target - prev) * sp(t, t0, w, z); prev = target; }
+  return v;
+}
+const lerp = (a, b, p) => a + (b - a) * p;
+const clamp01 = x => Math.max(0, Math.min(1, x));
+
+// ---------------------------------------------------------------- type
+const TYPE = {
+  every:  { s: 'Every company',      style: 'italic', weight: 400, size: 128 },
+  story:  { s: 'has a story',        style: 'normal', weight: 600, size: 128, period: true },
+  never:  { s: 'Most never tell it', style: 'italic', weight: 400, size: 120, period: true },
+  film:   { s: 'I film it.',         style: 'normal', weight: 600, size: 150 },
+  name:   { s: 'Jackson Luria',      style: 'normal', weight: 600, size: 150 },
+  made:   { s: 'made with',          style: 'italic', weight: 400, size: 46 },
+  claude: { s: 'Claude',             style: 'italic', weight: 400, size: 46 },
+};
+const CAP = 0.65;                        // Garamond cap height, in em
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+function setType(k) {
+  const d = TYPE[k];
+  ctx.font = `${d.style} ${d.weight} ${d.size}px ${FONT}`;
+  ctx.letterSpacing = `${(-0.02 * d.size).toFixed(2)}px`;   // tight
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+}
+function measure(k) {
+  setType(k);
+  const d = TYPE[k];
+  const ls = -0.02 * d.size;
+  d.w = ctx.measureText(d.s).width - ls;               // drop trailing spacing
+  if (d.period) {
+    const full = ctx.measureText(d.s + '.').width - ls;
+    d.pw = full - d.w;                                  // advance of the period
+    d.full = full;
+  } else d.full = d.w;
+}
+
+// Text that rises out of (or sinks back into) an invisible mask line.
+// enter: 0 -> 1 rises from below the line. exit: 0 -> 1 leaves toward dir.
+function maskedText(k, x, base, enter, exit, dir, color) {
+  const d = TYPE[k];
+  const dy = (1 - enter) * d.size * 1.5 + dir * exit * d.size * 1.5;
+  if (Math.abs(dy) > d.size * 1.49) return dy;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, base - d.size * 1.0, W, d.size * 1.4);
+  ctx.clip();
+  setType(k);
+  ctx.fillStyle = color;
+  ctx.fillText(d.s, x, base + dy);
+  ctx.restore();
+  return dy;
+}
+
+// ---------------------------------------------------------------- the spark
+// A drawn rendition of the Claude spark: a core and twelve rounded rays of
+// slightly uneven length. bloom 0 is a plain dot, which is what lets it grow
+// out of a full stop and shrink back into a line.
+const RAYS = [[0, 1.0], [29, .84], [60, .97], [91, .80], [120, 1.0], [149, .86],
+              [181, .95], [210, .82], [239, 1.0], [270, .87], [300, .93], [331, .83]];
+function drawSpark(x, y, R, bloom, rot) {
+  if (R < 0.2) return;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.fillStyle = CLAUDE;
+  const core = R * 0.16, h0 = R * 0.055, h1 = R * 0.085;
+  ctx.beginPath();
+  ctx.arc(0, 0, core, 0, TAU);
+  ctx.fill();
+  if (bloom > 0.002) {
+    for (const [a, l] of RAYS) {
+      const L = Math.max(0, (l * R - h1) * bloom);
+      ctx.save();
+      ctx.rotate(a * Math.PI / 180);
+      ctx.beginPath();
+      ctx.moveTo(0, -h0);
+      ctx.lineTo(L, -h1);
+      ctx.arc(L, 0, h1, -Math.PI / 2, Math.PI / 2);
+      ctx.lineTo(0, h0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+// ---------------------------------------------------------------- layout
+const L = {};
+function layout() {
+  for (const k in TYPE) measure(k);
+  const T = TYPE;
+  // Scene A/B share a baseline; caps sit on the optical centre.
+  L.abBase = CY + Math.round(T.every.size * CAP / 2);
+  L.lineA = L.abBase + T.every.size * 0.40;
+  L.everyX = CX - T.every.w / 2;
+  L.storyX = CX - T.story.full / 2;
+  L.storyDot = { x: L.storyX + T.story.w + T.story.pw * 0.42, y: L.abBase - T.story.size * 0.05, r: T.story.size * 0.052 };
+  // Scene C
+  L.cBase = CY + Math.round(T.never.size * CAP / 2);
+  L.lineC = L.cBase + T.never.size * 0.40;
+  L.neverX = CX - T.never.full / 2;
+  L.neverDot = { x: L.neverX + T.never.w + T.never.pw * 0.40, y: L.cBase - T.never.size * 0.045, r: T.never.size * 0.04 };
+  L.lineCHalf = T.never.full / 2 + 40;
+  // Scene D
+  L.dBase = CY + Math.round(T.film.size * CAP / 2);
+  L.filmX = CX - T.film.w / 2;
+  // Scene E: name + "made with ✻ Claude" lock-up
+  L.nameBase = CY + 12;
+  L.nameX = CX - T.name.w / 2;
+  L.subBase = L.nameBase + 96;
+  L.subR = 17;
+  const gap = 15;
+  const total = T.made.w + gap + L.subR * 2 + gap + T.claude.w;
+  L.madeX = CX - total / 2;
+  L.subSpark = { x: L.madeX + T.made.w + gap + L.subR, y: L.subBase - T.made.size * 0.30 };
+  L.claudeX = L.subSpark.x + L.subR + gap;
+}
+
+// ---------------------------------------------------------------- timeline
+// Beat map (120 BPM, beat = 0.5s). Key moments land on the grid.
+const K = {
+  lineIn:   0.10,
+  everyIn:  B(2),       // 1.0  "Every company" rises out of the line
+  lineOut:  B(2.25),
+  roll:     B(4),       // 2.0  roll to "has a story" — drums in
+  spark:    B(6),       // 3.0  the full stop becomes the spark
+  hop:      B(7),       // 3.5  spark hops to centre, text sinks
+  flood:    B(8),       // 4.0  white floods out of the spark — the breath
+  draw:     B(9),       // 4.5  spark draws the line
+  neverIn:  B(10),      // 5.0  "Most never tell it." — slow
+  tuck:     B(10.6),    //      spark tucks into the line
+  lineCOut: B(12),
+  neverOut: B(15),      // 7.5  words sink, full stop stays
+  frame:    B(15.25),   //      full stop becomes a 16:9 frame
+  black:    B(15.6),    // 8.0  the frame floods black — drop
+  filmIn:   B(16),
+  focus:    B(16.5),    // 8.5  focus brackets lock
+  focus2:   B(17.5),    // 8.75 second lock
+  rec:      B(18),      // 9.0  spark becomes the record light
+  nameIn:   B(20),      // 10.0 "Jackson Luria"
+  fly:      B(21),      // 10.5 spark flies to the credit
+  land:     B(22),      // 11.0 "made with ✻ Claude"
+  out:      B(24),      // 12.0 brackets release, final chord
+};
+
+function brackets(t) {
+  let hw = track(t, 900, [[K.focus, 430, 15, 0.55], [K.nameIn, 640, 9], [K.out, 1040, 5.5]]);
+  let hh = track(t, 470, [[K.focus, 168, 15, 0.55], [K.nameIn, 214, 9], [K.out, 620, 5.5]]);
+  const cy = track(t, CY, [[K.nameIn, CY - 8, 9]]);
+  const tap = sp(t, K.focus2, 26) - sp(t, K.focus2 + 0.07, 26);  // a quick double-tap
+  hw *= 1 - 0.03 * tap; hh *= 1 - 0.05 * tap;
+  const arm = track(t, 0, [[K.focus, 46, 15], [K.out, 0, 8]]);
+  return { cx: CX, cy, hw, hh, arm };
+}
+function recPos(t) {
+  const b = brackets(t);
+  return { x: b.cx - b.hw + 52, y: b.cy - b.hh + 52 };
+}
+
+function sparkState(t) {
+  const P0 = L.storyDot, P1 = { x: CX, y: CY }, P2 = { x: CX + L.lineCHalf, y: L.lineC };
+  if (t < K.filmIn) {
+    const m1 = sp(t, K.hop, 9), m2 = sp(t, K.draw, 7.5);
+    const R0 = track(t, 0, [[K.spark, 34, 16, 0.62]]);
+    const x = P0.x + R0 * 0.8 * (1 - m1) + (P1.x - P0.x) * m1 + (P2.x - P1.x) * m2;
+    const y = P0.y + (P1.y - P0.y) * m1 + (P2.y - P1.y) * m2 - Math.sin(Math.PI * clamp01(m1)) * 110;
+    const R = track(t, 0, [[K.spark, 34, 16, 0.62], [K.hop, 56, 9], [K.draw, 20, 7.5], [K.tuck, 0, 10]]);
+    const bloom = track(t, 0, [[K.spark - 0.02, 1, 13, 0.72], [K.tuck, 0, 10]]);
+    const rot = t * 0.35 - 1.4 * (1 - sp(t, K.spark, 9)) + 0.9 * sp(t, K.hop, 9) + 0.8 * sp(t, K.draw, 7.5);
+    return { x, y, R, bloom, rot };
+  }
+  const r = recPos(t), m = sp(t, K.fly, 8, 0.74), mc = clamp01(m);
+  const x = lerp(r.x, L.subSpark.x, m) - Math.sin(Math.PI * mc) * 150;
+  const y = lerp(r.y, L.subSpark.y, m);
+  // Record light: a soft heartbeat on every beat while it sits in the corner.
+  const recOn = sp(t, K.rec + 0.4, 10) * (1 - sp(t, K.fly, 12));
+  const since = t - Math.floor(t / BEAT) * BEAT;
+  const beatPulse = 1 + 0.14 * recOn * Math.exp(-since * 9);
+  const R = track(t, 0, [[K.rec, 19, 16, 0.6], [K.fly, L.subR, 8]]) * beatPulse;
+  const bloom = sp(t, K.rec - 0.02, 13, 0.72);
+  const rot = t * 0.35 + 1.6 * sp(t, K.fly, 8, 0.74) + 0.5 * sp(t, K.out, 10, 0.6);
+  return { x, y, R, bloom, rot };
+}
+
+// ---------------------------------------------------------------- render
+function roundRect(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function render(t) {
+  t = Math.max(0, Math.min(DUR, t));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = BLACK;
+  ctx.fillRect(0, 0, W, H);
+  const S = sparkState(t);
+
+  // ---- A: hairline, "Every company"
+  if (t < K.roll + 1) {
+    const half = track(t, 0, [[K.lineIn, 330, 6.5], [K.lineOut, 0, 11]]);
+    if (half > 0.5) { ctx.fillStyle = WHITE; ctx.fillRect(CX - half, L.lineA - 1, half * 2, 2); }
+    maskedText('every', L.everyX, L.abBase, sp(t, K.everyIn, 11), sp(t, K.roll - 0.04, 12), -1, WHITE);
+  }
+
+  // ---- B: "has a story" + its full stop
+  if (t > K.roll - 0.1 && t < K.flood) {
+    const enter = sp(t, K.roll + 0.03, 12), exit = sp(t, K.hop, 11);
+    const dy = maskedText('story', L.storyX, L.abBase, enter, exit, 1, WHITE);
+    const dotR = L.storyDot.r * (1 - sp(t, K.spark - 0.03, 22));
+    if (dotR > 0.3) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, L.abBase - TYPE.story.size, W, TYPE.story.size * 1.4); ctx.clip();
+      ctx.fillStyle = WHITE;
+      ctx.beginPath(); ctx.arc(L.storyDot.x, L.storyDot.y + dy, dotR, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // ---- white flood, grown from the spark
+  const wR = track(t, 0, [[K.flood - 0.03, 1200, 6.5]]);
+  if (wR > 0.5) { ctx.fillStyle = WHITE; ctx.beginPath(); ctx.arc(CX, CY, wR, 0, TAU); ctx.fill(); }
+
+  // ---- C: the breath. Everything in this group drifts in, slowly.
+  if (t < K.filmIn) {
+    const push = 1 + 0.035 * sp(t, K.neverIn, 1.1);
+    ctx.save();
+    ctx.translate(CX, CY); ctx.scale(push, push); ctx.translate(-CX, -CY);
+    const d = L.lineCHalf * sp(t, K.draw, 7.5) * (1 - sp(t, K.lineCOut, 5.5));
+    if (d > 1) { ctx.fillStyle = BLACK; ctx.fillRect(CX - d, L.lineC - 1, d * 2, 2); }
+    if (t > K.neverIn - 0.05) {
+      const enter = sp(t, K.neverIn, 5.2), exit = sp(t, K.neverOut, 12);
+      maskedText('never', L.neverX, L.cBase, enter, exit, 1, BLACK);
+      // Its full stop rises with the words, but doesn't leave with them.
+      const dyIn = (1 - enter) * TYPE.never.size * 1.5;
+      const g0 = sp(t, K.neverOut, 10);
+      if (g0 < 0.001) {
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, L.cBase - TYPE.never.size, W, TYPE.never.size * 1.4); ctx.clip();
+        ctx.fillStyle = BLACK;
+        ctx.beginPath(); ctx.arc(L.neverDot.x, L.neverDot.y + dyIn, L.neverDot.r, 0, TAU); ctx.fill();
+        ctx.restore();
+      }
+    }
+    drawSpark(S.x, S.y, S.R, S.bloom, S.rot);
+    ctx.restore();
+
+    // ---- full stop -> 16:9 frame -> black flood
+    const g0 = sp(t, K.neverOut, 13);
+    if (g0 > 0) {
+      const sx = CX + (L.neverDot.x - CX) * push, sy = CY + (L.neverDot.y - CY) * push;
+      const x = lerp(sx, CX, g0), y = lerp(sy, CY, g0);
+      const r0 = L.neverDot.r * push;
+      const g1 = sp(t, K.frame, 16), g2 = sp(t, K.black, 16);
+      let w = r0 * 2, h = r0 * 2, r = r0;
+      w = lerp(w, 288, g1); h = lerp(h, 162, g1); r = lerp(r, 14, g1);
+      w = lerp(w, 2300, g2); h = lerp(h, 1300, g2); r = lerp(r, 0, g2);
+      ctx.fillStyle = BLACK;
+      roundRect(x - w / 2, y - h / 2, w, h, r);
+      ctx.fill();
+    }
+  }
+
+  // ---- D + E: back on black. A slow push-in carries the final lock-up.
+  if (t >= K.filmIn - 0.05) {
+    if (t >= K.filmIn) { ctx.fillStyle = BLACK; ctx.fillRect(0, 0, W, H); }
+    const push = 1 + 0.028 * sp(t, K.land, 0.9);
+    ctx.save();
+    ctx.translate(CX, CY); ctx.scale(push, push); ctx.translate(-CX, -CY);
+
+    maskedText('film', L.filmX, L.dBase, sp(t, K.filmIn + 0.04, 12), sp(t, K.nameIn - 0.03, 12), -1, WHITE);
+
+    const b = brackets(t);
+    if (b.arm > 0.5) {
+      ctx.strokeStyle = WHITE; ctx.lineWidth = 3; ctx.lineCap = 'square';
+      ctx.beginPath();
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const x = b.cx + sx * b.hw, y = b.cy + sy * b.hh;
+        ctx.moveTo(x - sx * b.arm, y); ctx.lineTo(x, y); ctx.lineTo(x, y - sy * b.arm);
+      }
+      ctx.stroke();
+    }
+
+    maskedText('name', L.nameX, L.nameBase, sp(t, K.nameIn + 0.05, 11), 0, 0, WHITE);
+    maskedText('made', L.madeX, L.subBase, sp(t, K.land - 0.2, 11), 0, 0, WHITE);
+    maskedText('claude', L.claudeX, L.subBase, sp(t, K.land + 0.08, 11), 0, 0, WHITE);
+    if (t >= K.filmIn) drawSpark(S.x, S.y, S.R, S.bloom, S.rot);
+    ctx.restore();
+  }
+}
+
+// ---------------------------------------------------------------- music
+// An original, upbeat 120 BPM cue in D major, rendered offline (deterministic).
+// Black = groove, white = breath. Mastered to -14 LUFS at render time.
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+async function composeAudio(sr = 48000) {
+  const ac = new OfflineAudioContext(2, Math.round(sr * DUR), sr);
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  const rnd = mulberry32(0x4a4c);   // seeded: identical every render
+
+  const master = ac.createGain(); master.gain.value = 0.8;
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -14; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.01; comp.release.value = 0.15;
+  master.connect(comp).connect(ac.destination);
+
+  // Reverb: seeded noise impulse with an exponential tail.
+  const ir = ac.createBuffer(2, sr * 2.2, sr);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c);
+    let lp = 0;
+    for (let i = 0; i < d.length; i++) { lp += ((rnd() * 2 - 1) - lp) * 0.35; d[i] = lp * Math.pow(1 - i / d.length, 3.2); }
+  }
+  const verb = ac.createConvolver(); verb.buffer = ir;
+  const verbIn = ac.createGain(); verbIn.gain.value = 0.32;
+  verbIn.connect(verb).connect(master);
+
+  const noise = ac.createBuffer(1, sr * 2, sr);
+  { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rnd() * 2 - 1; }
+
+  function out(node, { pan = 0, gain = 1, wet = 0 } = {}) {
+    const p = ac.createStereoPanner(); p.pan.value = pan;
+    const g = ac.createGain(); g.gain.value = gain;
+    node.connect(p).connect(g).connect(master);
+    if (wet) { const s = ac.createGain(); s.gain.value = wet; g.connect(s).connect(verbIn); }
+  }
+  function env(param, t, a, peak, dec, floor = 0.0001) {
+    param.setValueAtTime(0, t);
+    param.linearRampToValueAtTime(peak, t + a);
+    param.exponentialRampToValueAtTime(floor, t + a + dec);
+  }
+  function noiseSrc(t, dur) {
+    const s = ac.createBufferSource(); s.buffer = noise;
+    s.start(t, (t * 0.731) % 1.5, dur); return s;
+  }
+
+  const kick = (t, v = 0.75) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.12);
+    env(g.gain, t, 0.003, v, 0.42);
+    o.connect(g); out(g); o.start(t); o.stop(t + 0.5);
+  };
+  const clap = (t, v = 0.32) => {
+    const s = noiseSrc(t, 0.35), f = ac.createBiquadFilter(), g = ac.createGain();
+    f.type = 'bandpass'; f.frequency.value = 1700; f.Q.value = 0.8;
+    g.gain.setValueAtTime(0, t);
+    for (const k of [0, 0.011, 0.022]) { g.gain.setValueAtTime(v, t + k); g.gain.exponentialRampToValueAtTime(v * 0.25, t + k + 0.009); }
+    g.gain.setValueAtTime(v, t + 0.033); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+    s.connect(f).connect(g); out(g, { wet: 0.5 });
+  };
+  const hat = (t, v = 0.12, open = false, pan = 0) => {
+    const s = noiseSrc(t, 0.3), f = ac.createBiquadFilter(), g = ac.createGain();
+    f.type = 'highpass'; f.frequency.value = 7800;
+    env(g.gain, t, 0.001, v, open ? 0.16 : 0.035);
+    s.connect(f).connect(g); out(g, { pan });
+  };
+  const bass = (t, m, dur, v = 0.42, hold = true) => {
+    const o1 = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+    o1.type = 'sine'; o2.type = 'sawtooth'; o1.frequency.value = o2.frequency.value = mtof(m);
+    const g2 = ac.createGain(); g2.gain.value = 0.35;
+    f.type = 'lowpass'; f.Q.value = 2;
+    f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(220, t + dur);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.006);
+    if (hold) g.gain.setValueAtTime(v, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o1.connect(g); o2.connect(g2).connect(f).connect(g); out(g);
+    o1.start(t); o2.start(t); o1.stop(t + dur + 0.02); o2.stop(t + dur + 0.02);
+  };
+  const pluck = (t, m, v = 0.11, pan = 0, bright = 1) => {
+    const o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+    o.type = 'triangle'; o2.type = 'square'; o.frequency.value = mtof(m); o2.frequency.value = mtof(m) * 1.003;
+    const g2 = ac.createGain(); g2.gain.value = 0.18;
+    f.type = 'lowpass'; f.Q.value = 3;
+    f.frequency.setValueAtTime(600 + 3400 * bright, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.22);
+    env(g.gain, t, 0.002, v, 0.32);
+    o.connect(f); o2.connect(g2).connect(f); f.connect(g); out(g, { pan, wet: 0.45 });
+    o.start(t); o2.start(t); o.stop(t + 0.4); o2.stop(t + 0.4);
+  };
+  const keys = (t, ms, dur, v = 0.06) => {
+    for (const m of ms) {
+      for (const [h, a] of [[1, 1], [2, 0.32], [3, 0.12], [4, 0.05]]) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = mtof(m) * h;
+        env(g.gain, t, 0.004, v * a, dur / h);
+        o.connect(g); out(g, { pan: ((m % 7) - 3) * 0.06, wet: 0.6 });
+        o.start(t); o.stop(t + dur + 0.1);
+      }
+    }
+  };
+  const pad = (t0, t1, ms, v = 0.06) => {
+    for (const m of ms) for (const det of [-7, 7]) {
+      const o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.value = mtof(m); o.detune.value = det;
+      f.type = 'lowpass'; f.frequency.value = 1100;
+      g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(v, t0 + 0.5);
+      g.gain.setValueAtTime(v, t1 - 0.4); g.gain.linearRampToValueAtTime(0, t1);
+      o.connect(f).connect(g); out(g, { pan: det / 20, wet: 0.7 });
+      o.start(t0); o.stop(t1 + 0.05);
+    }
+  };
+  const sweep = (t0, t1, f0, f1, v, peakAt = 1) => {
+    const s = noiseSrc(t0, t1 - t0), f = ac.createBiquadFilter(), g = ac.createGain();
+    f.type = 'bandpass'; f.Q.value = 1.4;
+    f.frequency.setValueAtTime(f0, t0); f.frequency.exponentialRampToValueAtTime(f1, t1);
+    const tp = lerp(t0, t1, peakAt);
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, tp);
+    if (peakAt < 1) g.gain.exponentialRampToValueAtTime(0.0001, t1); else g.gain.setValueAtTime(0, t1);
+    s.connect(f).connect(g); out(g, { wet: 0.4 });
+  };
+  const tick = (t, v = 0.07, f = 2600) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = f; env(g.gain, t, 0.001, v, 0.03);
+    o.connect(g); out(g, { wet: 0.25 }); o.start(t); o.stop(t + 0.06);
+  };
+  const bell = (t, m, v = 0.05) => {
+    for (const [h, a, d] of [[1, 1, 1.6], [2.76, 0.4, 0.7], [5.4, 0.18, 0.35]]) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = mtof(m) * h; env(g.gain, t, 0.002, v * a, d);
+      o.connect(g); out(g, { wet: 0.6 }); o.start(t); o.stop(t + d + 0.05);
+    }
+  };
+
+  // Harmony: one chord per 2-second bar. D | A | Bm | G | D | G A | D
+  const CH = {
+    D:  { bass: 38, tones: [62, 66, 69, 74] },
+    A:  { bass: 33, tones: [61, 64, 69, 73] },
+    Bm: { bass: 35, tones: [59, 62, 66, 71] },
+    G:  { bass: 31, tones: [59, 62, 67, 71] },
+  };
+  const chordAt = t => {
+    const bar = Math.floor(t / 2);
+    if (bar === 5) return (t % 2) < 1 ? CH.G : CH.A;
+    return [CH.D, CH.A, CH.Bm, CH.G, CH.D, null, CH.D][Math.min(bar, 6)];
+  };
+  const groove = t => (t >= 2 && t < 4) || (t >= 8 && t < 12);
+  const arpShape = [0, 2, 1, 3, 2, 1, 3, 2];   // 8th-note pattern over chord tones
+
+  for (let i = 0; i < 24 * 4; i++) {           // 16th-note grid up to 12s
+    const t = i * BEAT / 4;
+    if (t >= 12) break;
+    const c = chordAt(t), s16 = i % 4, beat = Math.floor(i / 4);
+    if (groove(t)) {
+      if (s16 === 0) kick(t);
+      if (s16 === 0 && beat % 2 === 1) clap(t);
+      if (s16 === 2) { hat(t, 0.11, true, 0.15); bass(t, c.bass + 12, BEAT * 0.45); }
+      if (s16 === 1 || s16 === 3) hat(t, 0.045, false, -0.2);
+      if (s16 === 0 && beat % 4 === 0) bass(t, c.bass, BEAT * 0.4, 0.3);
+    } else if (t >= 1 && t < 2) {
+      if (s16 === 2) hat(t, 0.06 + 0.05 * (t - 1), true, 0.15);   // hats lean in before the drop
+    }
+    // Plucked arpeggio on 8ths; it opens up in bar one and thins out in the breath.
+    if (s16 % 2 === 0) {
+      const step = (i / 2) % 8;
+      const m = c.tones[arpShape[step]] + 12;
+      const inBreath = t >= 4 && t < 8;
+      if (!inBreath) pluck(t, m, t < 2 ? 0.2 : 0.11, step % 2 ? 0.35 : -0.35, t < 2 ? 0.35 + 0.65 * (t / 2) : 1);
+      else pluck(t, m, s16 === 0 ? 0.16 : 0.09, step % 2 ? 0.3 : -0.3, 0.3);
+    }
+    if (s16 === 0 && beat % 4 === 0) keys(t, c.tones.slice(0, 3), 1.8, t < 2 || (t >= 4 && t < 8) ? 0.1 : 0.04);
+  }
+  // The breath: a pad under the white, and a riser into the black.
+  pad(4.0, 6.05, [59, 62, 66]);
+  pad(6.0, 8.0, [55, 59, 62]);
+  sweep(6.4, 8.0, 300, 7000, 0.13);
+  // Whoosh as the white floods out of the spark.
+  sweep(3.55, 4.6, 5000, 500, 0.09, 0.42);
+  // Soft punctuation.
+  tick(0.10, 0.05, 2200);                      // the hairline appears
+  bell(B(6), 81, 0.045);                       // full stop becomes the spark
+  tick(B(16.5) + 0.12, 0.06);                  // focus lock
+  tick(B(17.5), 0.05);                         // second lock
+  bell(B(18), 86, 0.03);                       // record light
+  bell(B(22), 81, 0.05);                       // spark lands in the credit
+  // Final chord at 12.0 rings to the end.
+  kick(12, 0.95);
+  bass(12, 38, 2.6, 0.4, false);
+  keys(12, [62, 66, 69, 76], 3.0, 0.06);
+  pluck(12, 86, 0.08, 0.3);
+  pad(12.0, 14.9, [62, 66, 69, 74], 0.05);
+  pad(0.0, 2.05, [50, 57, 62], 0.04);
+  sweep(11.7, 13.2, 6000, 900, 0.05, 0.25);
+
+  return ac.startRendering();
+}
+
+// 32-bit float WAV, base64, for the renderer.
+function wavBase64(buf) {
+  const ch = buf.numberOfChannels, n = buf.length, sr = buf.sampleRate;
+  const bytes = new ArrayBuffer(44 + n * ch * 4), v = new DataView(bytes);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * ch * 4, true); str(8, 'WAVE');
+  str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 3, true); v.setUint16(22, ch, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * ch * 4, true); v.setUint16(32, ch * 4, true); v.setUint16(34, 32, true);
+  str(36, 'data'); v.setUint32(40, n * ch * 4, true);
+  const data = [];
+  for (let c = 0; c < ch; c++) data.push(buf.getChannelData(c));
+  let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { v.setFloat32(o, data[c][i], true); o += 4; }
+  const u8 = new Uint8Array(bytes);
+  let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+// ---------------------------------------------------------------- boot
+const params = new URLSearchParams(location.search);
+if (params.has('render')) document.body.classList.add('render');
+
+window.render = render;
+window.composeWav = async () => wavBase64(await composeAudio());
+window.ready = (async () => {
+  await Promise.all([
+    document.fonts.load(`normal 600 100px ${FONT}`),
+    document.fonts.load(`italic 400 100px ${FONT}`),
+  ]);
+  layout();
+  render(params.has('t') ? parseFloat(params.get('t')) : 0);
+  return true;
+})();
+
+// Preview player (not used for rendering). The audio clock drives render(t).
+if (!params.has('render')) {
+  let actx = null, buffer = null, src = null, startedAt = 0, playing = false, frame = 0;
+  const draw = () => {
+    if (!playing) return;
+    const t = actx.currentTime - startedAt;
+    if (t >= DUR) { playing = false; render(DUR); return; }
+    render(t);
+    requestAnimationFrame(draw);
+  };
+  const play = async () => {
+    await window.ready;
+    actx = actx || new AudioContext({ sampleRate: 48000 });
+    buffer = buffer || await composeAudio();
+    if (src) try { src.stop(); } catch (e) {}
+    src = actx.createBufferSource(); src.buffer = buffer; src.connect(actx.destination);
+    startedAt = actx.currentTime + 0.05; src.start(startedAt);
+    playing = true; requestAnimationFrame(draw);
+  };
+  const stop = () => { playing = false; if (src) try { src.stop(); } catch (e) {} };
+  addEventListener('click', () => (playing ? stop() : play()));
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); playing ? stop() : play(); }
+    if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
+      stop();
+      frame = Math.max(0, Math.min(DUR * FPS, frame + (e.code === 'ArrowRight' ? 1 : -1) * (e.shiftKey ? 30 : 1)));
+      render(frame / FPS);
+    }
+  });
+}
+</script>
+</body>
+</html>
