@@ -510,10 +510,19 @@ button { font: inherit; color: inherit; }
   content: ""; position: absolute; inset: 0; opacity: .16; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* Black-and-white film print: grey tones, a little extra contrast and heavier grain */
+.bw .snap-photo img { filter: grayscale(1) contrast(1.15) brightness(.96); }
+.bw .snap-photo::after { opacity: .38; }
 .ph-label { position: absolute; left: 8%; top: 7%; font-size: 9px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
 .polaroid figcaption {
   font-family: var(--f-script); font-size: clamp(12px, 2.7cqi, 18px); line-height: 1.1;
   text-align: center; padding: 5% 4% 6%; color: var(--ink);
+}
+/* Place name under a script caption: small spaced capitals, like a film-lab stamp (keeps Aston's swash capitals out) */
+.polaroid figcaption .loc {
+  display: block; margin-top: .45em;
+  font-family: var(--f-body); font-weight: 500; font-size: max(7px, .48em); line-height: 1;
+  letter-spacing: .22em; text-transform: uppercase; color: var(--ink-2);
 }
 .tape {
   position: absolute; z-index: 1; top: -3.5%; left: 50%; width: 42%; height: 9%;
@@ -561,7 +570,7 @@ button { font: inherit; color: inherit; }
 .board-doodles path { fill: none; stroke: var(--crimson); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .doodle-label {
   position: absolute; left: var(--x); top: var(--y); margin: 0; z-index: 900; pointer-events: none;
-  font-family: var(--f-script); font-size: clamp(14px, 3.4cqi, 22px); color: var(--crimson); rotate: -8deg;
+  font-family: var(--f-script); font-size: clamp(14px, 3.4cqi, 22px); color: var(--crimson); rotate: -8deg; white-space: nowrap;
 }
 .board-actions { position: absolute; right: 0; bottom: -52px; z-index: 950; display: flex; gap: 8px; }
 .board-btn {
@@ -707,17 +716,12 @@ button { font: inherit; color: inherit; }
    Kept deliberately faint. Glows are layered text-shadows (no blur filters to repaint),
    bevels are gradients clipped to the letters. */
 
-/* Glowing words on black: a white bloom with a crimson haze that slowly breathes */
+/* Glowing words on black: a white bloom with a crimson haze (static: animated shadows were costly) */
 .hero-title .script,
 .contact-title .script {
-  text-shadow: 0 0 .18em rgba(255, 255, 255, .55), 0 0 .6em rgba(255, 255, 255, .22), 0 0 1.4em rgba(179, 18, 46, .45);
-  animation: breathe 6s ease-in-out infinite;
-}
-@keyframes breathe {
-  50% { text-shadow: 0 0 .22em rgba(255, 255, 255, .7), 0 0 .8em rgba(255, 255, 255, .3), 0 0 1.8em rgba(179, 18, 46, .6); }
+  text-shadow: 0 0 .16em rgba(255, 255, 255, .6), 0 0 .9em rgba(179, 18, 46, .55);
 }
 .hero .scribble svg { filter: drop-shadow(0 0 3px rgba(179, 18, 46, .7)) drop-shadow(0 0 12px rgba(179, 18, 46, .4)); }
-.hero-title { text-shadow: 0 0 40px rgba(255, 255, 255, .14); }
 
 /* Anamorphic flare: a thin horizontal streak of light behind the hero headline */
 .hero-copy::before {
@@ -727,9 +731,7 @@ button { font: inherit; color: inherit; }
     radial-gradient(50% 3% at 50% 50%, rgba(255, 255, 255, .22), transparent),
     radial-gradient(42% 22% at 50% 50%, rgba(179, 18, 46, .16), transparent),
     radial-gradient(18% 40% at 50% 50%, rgba(255, 255, 255, .05), transparent);
-  animation: flare 9s ease-in-out infinite alternate;
 }
-@keyframes flare { from { opacity: .65; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.06); } }
 
 /* Bevelled title on white: satin black lit from above, resting on a soft shadow */
 .work-title {
@@ -752,7 +754,7 @@ button { font: inherit; color: inherit; }
 .contact-title .script { -webkit-text-fill-color: #fff; }
 
 /* Signature: a soft halo, like light behind a title card */
-.footer-sign { text-shadow: 0 0 .12em rgba(255, 255, 255, .35), 0 0 .5em rgba(179, 18, 46, .35); }
+.footer-sign { text-shadow: 0 0 .1em rgba(255, 255, 255, .35), 0 0 .3em rgba(179, 18, 46, .35); }
 
 /* Light leaks drifting across the white sections, barely there */
 .sheet { isolation: isolate; }
@@ -772,13 +774,8 @@ button { font: inherit; color: inherit; }
 
 /* Film grain over everything, very faint */
 body::after {
-  content: ""; position: fixed; inset: -50%; z-index: 9000; pointer-events: none; opacity: .045;
+  content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: .045;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.2s steps(6) infinite;
-}
-@keyframes grain {
-  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
-  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -789,7 +786,6 @@ body::after {
   .spin-hint.hide .sh-inner { opacity: 0; }
   .js .rv { opacity: 1; transform: none; filter: none; transition: none; }
   .card.playing .card-leak, .card.playing .card-progress i { animation: none; }
-  .hero-title .script, .contact-title .script, .hero-copy::before, body::after { animation: none; }
 }
 
 /* Anchor jumps land below the fixed nav, and glide unless reduced motion is on. */
