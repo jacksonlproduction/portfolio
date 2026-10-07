@@ -1,5 +1,6 @@
 // Focus Ball cursor — pairs with assets/css/cursor.css.
 // Only runs on devices with a fine pointer (mouse / trackpad).
+// Add data-cursor-float to a large element (like the hero canvas) to show only the label, with no outline.
 (() => {
   if (!matchMedia('(pointer: fine)').matches) return;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,18 +21,30 @@
 
   const release = el => { if (el && el.hasAttribute('data-magnet')) el.style.transform = ''; };
 
+  // Work out what's under the pointer. Elements like the 3D reel change data-cursor / data-label
+  // while hovered, so those are compared too, not just the element.
+  function evaluate(el) {
+    cur.classList.toggle('on-dark', !!(el && el.closest && el.closest('[data-dark]')));
+    const t = el && el.closest ? el.closest('[data-cursor]') : null;
+    const nextState = t ? t.dataset.cursor : '';
+    const nextLabel = t ? t.dataset.label || '' : '';
+    if (t !== target || nextState !== state || nextLabel !== tag.textContent) {
+      if (t !== target) release(target);
+      target = t; state = nextState;
+      cur.classList.remove('s-link', 's-play', 's-drag');
+      cur.classList.toggle('locked', !!t);
+      cur.classList.toggle('float', !!t && t.hasAttribute('data-cursor-float'));
+      if (t) { cur.classList.add('s-' + state); tag.textContent = nextLabel; }
+    }
+  }
+
   addEventListener('pointermove', e => {
     mx = e.clientX; my = e.clientY;
     cur.classList.remove('hidden');
-    const t = e.target.closest ? e.target.closest('[data-cursor]') : null;
-    if (t !== target) {
-      release(target);
-      target = t; state = t ? t.dataset.cursor : '';
-      cur.classList.remove('s-link', 's-play', 's-drag');
-      cur.classList.toggle('locked', !!t);
-      if (t) { cur.classList.add('s-' + state); tag.textContent = t.dataset.label || ''; }
-    }
+    evaluate(e.target);
   }, { passive: true });
+  // Call this after opening or closing an overlay so the cursor re-checks what it's over.
+  addEventListener('cursor:refresh', () => requestAnimationFrame(() => evaluate(document.elementFromPoint(mx, my))));
   document.documentElement.addEventListener('mouseleave', () => { cur.classList.add('hidden'); release(target); });
   addEventListener('pointerdown', () => cur.classList.add('down'));
   addEventListener('pointerup', () => cur.classList.remove('down'));
@@ -44,7 +57,10 @@
     const vx = bx - pbx, vy = by - pby; pbx = bx; pby = by;
 
     let goal;
-    if (target && target.isConnected) {
+    if (target && target.isConnected && target.hasAttribute('data-cursor-float')) {
+      // Big canvases: don't frame the element, shrink the ball away and let the label do the talking.
+      goal = { x: mx, y: my, w: 0, h: 0, r: 0 };
+    } else if (target && target.isConnected) {
       const r = target.getBoundingClientRect();
       const pad = state === 'link' ? 6 : 8;
       const rad = parseFloat(getComputedStyle(target).borderTopLeftRadius) || 0;
