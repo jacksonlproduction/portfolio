@@ -546,6 +546,127 @@ button { font: inherit; color: inherit; }
 .kit button::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--crimson); opacity: 0; transition: opacity .3s; }
 .kit button:hover::after, .kit button:focus-visible::after { opacity: 1; }
 
+/* ═════════ ABOUT (scrapbook) ═════════ */
+.about {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(60px, 10vh, 120px) var(--gutter) clamp(90px, 14vh, 160px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 80px);
+  align-items: center;
+}
+@media (max-width: 900px) { .about { grid-template-columns: minmax(0, 1fr); } }
+
+.about-board {
+  position: relative;
+  aspect-ratio: 1 / 1.02;
+  max-width: 100%;
+  border-radius: 22px;
+  background: radial-gradient(circle, #d9d5d5 1px, transparent 1.3px) 0 0 / 22px 22px;
+  container-type: inline-size;
+  isolation: isolate;
+}
+.snap {
+  position: absolute;
+  left: var(--x); top: var(--y); width: var(--w);
+  margin: 0;
+  transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--r) + var(--tilt, 0deg))) scale(var(--s, 1));
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .35s, filter .35s;
+}
+.snap.dragging { cursor: grabbing; transition: box-shadow .35s; --s: 1.05; }
+.snap.settling { transition: transform .9s cubic-bezier(.2, .8, .2, 1); }
+
+.polaroid {
+  background: var(--paper);
+  padding: 5.5% 5.5% 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 30px -14px rgba(0, 0, 0, .35);
+}
+.snap.dragging.polaroid, .snap.dragging.ticket { box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 30px 50px -18px rgba(0, 0, 0, .45); }
+.snap-photo {
+  position: relative; aspect-ratio: 4 / 5; overflow: hidden;
+  background: linear-gradient(150deg, var(--a), var(--b));
+}
+.square .snap-photo { aspect-ratio: 1; }
+.snap-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.snap-photo::after {
+  content: ""; position: absolute; inset: 0; opacity: .16; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.ph-label { position: absolute; left: 8%; top: 7%; font-size: 9px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
+.polaroid figcaption {
+  font-family: var(--f-script); font-size: clamp(13px, 3.3cqi, 22px); line-height: 1.1;
+  text-align: center; padding: 9% 4% 10%; color: var(--ink);
+}
+.tape {
+  position: absolute; z-index: 1; top: -3.5%; left: 50%; width: 42%; height: 9%;
+  translate: -50% 0; rotate: var(--tr, 0deg);
+  background: rgba(232, 224, 208, .78);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+  clip-path: polygon(2% 0, 98% 4%, 100% 50%, 97% 100%, 3% 96%, 0 50%);
+}
+
+.ticket {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  background: var(--paper); border: 1.5px solid var(--ink); border-radius: 6px;
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .35);
+  -webkit-mask: radial-gradient(circle at 0 50%, transparent 7px, #000 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #000 7.5px) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle at 0 50%, transparent 7px, #000 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #000 7.5px) right / 51% 100% no-repeat;
+}
+.t-main { display: grid; gap: 1px; padding: 9% 8% 9% 11%; }
+.t-main b { font-family: var(--f-wide); font-weight: 800; font-size: clamp(7px, 1.7cqi, 11px); letter-spacing: .02em; text-transform: uppercase; color: var(--crimson); }
+.t-main i { font-family: var(--f-serif); font-size: clamp(15px, 3.8cqi, 26px); line-height: 1.05; letter-spacing: -.02em; }
+.t-main small { font-size: clamp(6px, 1.45cqi, 10px); color: var(--ink-2); letter-spacing: .02em; }
+.t-stub {
+  display: grid; align-content: center; justify-items: center; padding: 0 14% 0 12%;
+  border-left: 1.5px dashed var(--ink); font-size: clamp(6px, 1.4cqi, 9px); text-transform: uppercase; letter-spacing: .14em; text-align: center; color: var(--ink-2);
+}
+.t-stub b { font-family: var(--f-tall); font-weight: 400; font-size: clamp(16px, 4.4cqi, 30px); letter-spacing: 0; color: var(--ink); line-height: 1; }
+
+.stamp svg, .canister svg { display: block; width: 100%; height: auto; }
+.stamp { opacity: .9; }
+.st-ring { fill: none; stroke: var(--crimson); stroke-width: 2.4; }
+.st-text { font-family: var(--f-body); font-weight: 600; font-size: 9.5px; letter-spacing: 1.6px; fill: var(--crimson); }
+.st-mid { font-family: var(--f-tall); font-size: 30px; fill: var(--crimson); }
+.canister { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .25)); }
+.cn { fill: var(--ink); }
+.cn-band { fill: var(--paper); }
+.cn-text { font-family: var(--f-wide); font-weight: 800; font-size: 9px; fill: var(--ink); }
+
+.note {
+  margin: 0; padding: 8% 8% 10%;
+  background: var(--paper) repeating-linear-gradient(transparent 0 1.55em, #ece8e8 1.55em calc(1.55em + 1px));
+  box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .35);
+  font-family: var(--f-script); font-size: clamp(15px, 3.3cqi, 24px); line-height: 1.55em; color: var(--ink);
+}
+
+.board-doodles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 900; overflow: visible; }
+.board-doodles path { fill: none; stroke: var(--crimson); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.doodle-label {
+  position: absolute; left: var(--x); top: var(--y); margin: 0; z-index: 900; pointer-events: none;
+  font-family: var(--f-script); font-size: clamp(14px, 3.4cqi, 22px); color: var(--crimson); rotate: -8deg;
+}
+.board-shuffle {
+  position: absolute; right: 0; bottom: -8px; z-index: 950;
+  border: 1px solid var(--hair); background: var(--paper); border-radius: 999px;
+  padding: 9px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+}
+
+.about-copy { display: grid; gap: 18px; align-content: center; justify-items: start; }
+.about-title { margin: 0; padding-bottom: .3em; font-weight: 500; font-size: clamp(40px, 5.4vw, 78px); line-height: 1; letter-spacing: -.05em; }
+.about-title .script { font-family: var(--f-script); font-weight: 400; letter-spacing: 0; font-size: 1.15em; }
+.about-lede { margin: 0; font-size: clamp(19px, 1.7vw, 23px); line-height: 1.4; letter-spacing: -.02em; max-width: 34ch; }
+.about-body { margin: 0; color: var(--ink-2); font-weight: 300; max-width: 46ch; }
+.about-facts { margin: 6px 0 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; max-width: 460px; }
+.about-facts div { padding-block: 12px; border-top: 1px solid var(--hair); display: grid; gap: 2px; }
+.about-facts dt { font-size: 12px; color: var(--ink-2); }
+.about-facts dd { margin: 0; font-family: var(--f-serif); font-style: italic; font-size: 19px; }
+.pill.dark { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
 /* ═════════ Lightbox ═════════ */
 .lightbox { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--gutter); color: #fff; }
 .lightbox[hidden] { display: none; }
@@ -577,3 +698,9 @@ button { font: inherit; color: inherit; }
 /* Anchor jumps land below the fixed nav, and glide unless reduced motion is on. */
 section[id] { scroll-margin-top: 64px; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* Scrapbook on touch: vertical swipes scroll the page, sideways drags pick pieces up. */
+@media (pointer: coarse) { .snap { touch-action: pan-y; } }
+/* Once the table's been played with, the arrows fade back (they pointed at the original layout). */
+.board-doodles, .doodle-label { transition: opacity .6s; }
+.about-board.touched .board-doodles, .about-board.touched .doodle-label { opacity: .25; }
