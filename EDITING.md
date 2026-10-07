@@ -20,7 +20,7 @@ Order in the file = order on the reel and in the grid. With fewer than 9 project
 ## About (scrapbook + bio)
 In `index.html`, search for `ABOUT (scrapbook)`.
 - Photos: put images in `assets/img/scrapbook/` and add `<img src="assets/img/scrapbook/your-photo.jpg" alt="what's in it">` inside a `.snap-photo` div (you can delete the `ph-label` span).
-- The portrait next to the bio is `assets/img/scrapbook/about-me.jpg` (cropped from the original in `assets/img/src/`); search `about-portrait` in `index.html` to change it or its caption. Phone photos in HEIC need converting to JPG first; browsers can't show HEIC.
+- The portrait next to the bio is `assets/img/scrapbook/about-me.jpg` (cropped from the original in `assets/img/src/`); search `about-portrait` in `index.html` to change it. Phone photos in HEIC need converting to JPG first; browsers can't show HEIC.
 - Two polaroids are already wired up and waiting for their photos: save them as `assets/img/scrapbook/cardiff.jpg` and `assets/img/scrapbook/vista-muay-thai.jpg`. Polaroids with the `bw` class show the photo in black and white with heavier film grain. Nudge the crop with `object-position` on the `<img>`.
 - Captions are the `<figcaption>` text. Wrap a place name in `<span class="loc">` to set it as a small spaced-out location line. **Don't use numbers in captions** — see the font note below.
 - Bio text, the quick facts (city, year, etc.) and the "Shoots on" kit line are right below the scrapbook.

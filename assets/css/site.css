@@ -584,14 +584,10 @@ button { font: inherit; color: inherit; }
 /* Portrait: a taped print standing next to the intro (under the title on phones) */
 .about-portrait {
   grid-column: 2; grid-row: 1 / span 6; align-self: center; justify-self: stretch;
-  position: relative; margin: 0; padding: 3.5% 3.5% 0; background: var(--paper); rotate: 2deg;
+  position: relative; margin: 0; padding: 3.5%; background: var(--paper); rotate: 2deg;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 30px 60px -28px rgba(0, 0, 0, .45);
 }
 .about-portrait img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
-.about-portrait figcaption {
-  font-family: var(--f-script); font-size: clamp(15px, 1.45vw, 21px); line-height: 1.1; white-space: nowrap;
-  text-align: center; padding: 5% 4% 6%;
-}
 .about-portrait .tape { left: 50%; top: -14px; translate: -50% 0; }
 @media (max-width: 640px) {
   .about-copy { grid-template-columns: minmax(0, 1fr); }
