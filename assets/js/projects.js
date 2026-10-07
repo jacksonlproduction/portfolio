@@ -11,7 +11,7 @@
 window.PROJECTS = [
   { title: 'Back in Black', client: 'Carlsbad High Football', kind: 'Hype edit', year: '', length: '', youtube: 'XrILXU8Qkow', vertical: false, poster: '', preview: '', tint: ['#2a2a2a', '#070707'] },
   { title: 'Drone Sample', client: '', kind: 'Drone', year: '', length: '', youtube: 'msb17SudMss', vertical: false, poster: '', preview: '', tint: ['#23313a', '#090909'] },
-  { title: 'Hype Edit', client: '', kind: 'Hype edit', year: '', length: '', youtube: 'Gl8d3AwS854', vertical: false, poster: '', preview: '', tint: ['#5a0d1c', '#0c0c0c'] },
+  { title: 'Football Hype Edit', client: '', kind: 'Hype edit', year: '', length: '', youtube: 'Gl8d3AwS854', vertical: false, poster: '', preview: '', tint: ['#5a0d1c', '#0c0c0c'] },
   { title: 'Push', client: '', kind: 'Feature', blurb: 'A cinematic feature story following two skateboarders: the grind, the style and what keeps them coming back to the board.', year: '', length: '', youtube: 'JRt7GK9okqE', vertical: false, poster: '', preview: '', tint: ['#3a3226', '#0b0a08'] },
   { title: 'Devin', client: 'Carlsbad High', kind: 'Short doc', blurb: 'A short documentary on Devin Adams, a Carlsbad High student with special needs, and the people and moments that make up his world.', year: '', length: '', youtube: 'ovH4jUSC23k', vertical: false, poster: '', preview: '', tint: ['#23313a', '#090909'] },
 ];
