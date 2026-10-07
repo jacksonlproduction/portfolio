@@ -20,4 +20,20 @@
   addEventListener('scroll', queue, { passive: true });
   addEventListener('resize', queue);
   check();
+
+  /* ───────── Phone menu ───────── */
+  const menu = document.getElementById('menu');
+  const btn = document.getElementById('menu-open');
+  if (!menu || !btn) return;
+  const setOpen = open => {
+    menu.hidden = !open;
+    document.documentElement.classList.toggle('menu-open', open);
+    document.documentElement.style.overflow = open ? 'hidden' : '';
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  };
+  btn.addEventListener('click', () => setOpen(menu.hidden));
+  menu.addEventListener('click', e => { if (e.target.closest('a')) setOpen(false); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); } });
+  matchMedia('(min-width: 641px)').addEventListener('change', e => { if (e.matches) setOpen(false); });
 })();
