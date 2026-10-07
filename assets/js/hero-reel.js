@@ -12,6 +12,19 @@
   const pad2 = n => String(n).padStart(2, '0');
   const mod = (a, n) => ((a % n) + n) % n;
 
+  /* ───────── "Spin me" hint, shown once until the first interaction ───────── */
+  const hint = document.getElementById('spin-hint');
+  let hintState = hint ? 'waiting' : 'gone', hintGoneAt = 0, wiggleStart = 0;
+  const hintShowAt = performance.now() + (reduce ? 400 : 2300);
+  function dismissHint() {
+    if (hintState === 'gone') return;
+    hintState = 'gone';
+    hintGoneAt = performance.now();
+    wiggleStart = 0;
+    hint.classList.remove('show');
+    hint.classList.add('hide');
+  }
+
   /* ───────── Lightbox ───────── */
   const lb = document.getElementById('lightbox');
   const lbVideo = document.getElementById('lb-video');
@@ -20,6 +33,7 @@
   let lbOpen = false, lastFocus = null;
 
   function openProject(i) {
+    dismissHint();
     const p = P[i];
     lbTitle.textContent = p.title;
     lbKind.textContent = `${p.kind} · ${p.year} · ${p.length}`;
@@ -99,6 +113,8 @@
   } catch (err) {
     hero.classList.add('no-webgl');
     canvas.remove();
+    if (hint) hint.remove();
+    hintState = 'gone';
     return;
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -119,7 +135,7 @@
   const spin = new THREE.Group();   // rotates around the reel's own axis
   tilt.add(spin);
   scene.add(tilt);
-  const TILT = { x: 0.1, z: -0.09, y: -0.62 };
+  const TILT = { x: 0.1, z: -0.09, y: -0.7 };
   tilt.rotation.set(TILT.x, 0, TILT.z);
   tilt.position.y = TILT.y;
 
@@ -328,8 +344,8 @@
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     const half = Math.tan((camera.fov * Math.PI) / 360);
-    const want = R * (camera.aspect < 1 ? 0.6 : 1.32);
-    const dist = Math.max(9.5, want / (half * camera.aspect) + R);
+    const want = R * (camera.aspect < 1 ? 0.5 : 1.02);
+    const dist = Math.max(8.6, want / (half * camera.aspect) + R);
     camera.position.set(0, 0.7, dist);
     camera.lookAt(0, -0.05, 0);
     camera.updateProjectionMatrix();
@@ -348,6 +364,7 @@
 
   if (!reduce) { angle = target + 2.6; tilt.scale.setScalar(0.84); tilt.rotation.x = 0.55; }
 
+  const hintPos = new THREE.Vector3();
   const snap = a => Math.round(a / STEP) * STEP;
   const frontIndex = () => mod(Math.round(-angle / STEP), N);
   function goTo(i, thenOpen) {
@@ -360,6 +377,7 @@
 
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
+    dismissHint();
     pressed = hovered;   // remember which frame was under the pointer when the press started
     dragging = true; moved = 0; vel = 0;
     lastX = e.clientX; lastMoveT = performance.now();
@@ -391,6 +409,7 @@
   canvas.addEventListener('pointercancel', endDrag);
   canvas.addEventListener('pointerleave', () => { pointerIn = false; });
   canvas.addEventListener('keydown', e => {
+    if (e.key.startsWith('Arrow') || e.key === 'Enter' || e.key === ' ') dismissHint();
     if (e.key === 'ArrowRight') { e.preventDefault(); vel = 0; target = snap(target) - STEP; lastInteract = performance.now(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); vel = 0; target = snap(target) + STEP; lastInteract = performance.now(); }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProject(frontIndex()); }
@@ -421,7 +440,23 @@
       target -= STEP;
       lastInteract = nowMs;
     }
-    spin.rotation.y = angle;
+    // "spin me" hint: pops up from inside the ring and the reel gives a little wiggle
+    if (hintState === 'waiting' && nowMs >= hintShowAt) {
+      hintState = 'shown';
+      hint.classList.add('show');
+      wiggleStart = nowMs;
+    }
+    if (hintState === 'shown' && !reduce && nowMs - wiggleStart > 6500) wiggleStart = nowMs;
+    const wt = nowMs - wiggleStart;
+    const nudge = wiggleStart && !reduce && wt < 1800 ? Math.sin(wt / 1000 * 10) * 0.075 * Math.exp(-wt / 520) : 0;
+    spin.rotation.y = angle + nudge;
+    if (hintState !== 'gone' || nowMs - hintGoneAt < 900) {
+      tilt.updateMatrixWorld(true);
+      hintPos.set(0, 0.28, 0);
+      spin.localToWorld(hintPos);
+      hintPos.project(camera);
+      hint.style.transform = `translate3d(${((hintPos.x + 1) / 2 * W).toFixed(1)}px, ${((1 - hintPos.y) / 2 * H).toFixed(1)}px, 0)`;
+    }
 
     // intro settle
     tilt.scale.setScalar(lerp(tilt.scale.x, 1, 0.045));
