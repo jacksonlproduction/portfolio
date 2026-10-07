@@ -395,10 +395,25 @@
   let recording = 0, flying = false, lift = 0, propSpeed = 0;
 
   const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+  // Tapping a dot zooms in on that part and opens a callout beside it; tap it again (or empty space) to zoom out.
+  let active = null, zoom = 0;
+  const callout = $('g3d-callout');
+  function clearSpot() {
+    active = null;
+    callout.classList.remove('on');
+    spots.forEach(s => s.b.classList.remove('sel'));
+    tPitch = DEFAULT.pitch;
+  }
   function focusSpot(h) {
     const m = models[current]; const a = m && m.anchors[h.key];
-    showPart(h);
     lastInteract = performance.now();
+    if (active === h && !h.action) { clearSpot(); return; }
+    active = h;
+    spots.forEach(s => s.b.classList.toggle('sel', s.h === h));
+    callout.querySelector('.gc-label').textContent = h.label;
+    callout.querySelector('.gc-text').textContent = h.text;
+    callout.classList.remove('on'); void callout.offsetWidth; callout.classList.add('on');
+    showPart(h);
     if (h.action === 'record' && m.rec) recording = recording > 0 ? 0 : 1;
     if (h.action === 'takeoff') setFlying(!flying);
     if (!a) return;
@@ -420,6 +435,7 @@
     $('g3d-takeoff').hidden = id !== 'mavic';
     if (d.colors) buildSwatches(d);
     buildSpots(d);
+    clearSpot();
     recording = 0;
     if (flying) setFlying(false);
     if (!current || reduce) { mount(id); current = id; return; }
@@ -481,7 +497,7 @@
     vYaw = vYaw * 0.5 + dx * 0.0085 * 0.5;
     lastInteract = performance.now();
   });
-  const end = () => { dragging = false; };
+  const end = () => { if (dragging && moved < 6 && active) clearSpot(); dragging = false; };
   canvas.addEventListener('pointerup', end);
   canvas.addEventListener('pointercancel', () => { dragging = false; vYaw = 0; });
   canvas.addEventListener('dblclick', () => { tYaw = yaw + wrapAngle(DEFAULT.yaw - yaw); tPitch = DEFAULT.pitch; vYaw = 0; });
@@ -493,13 +509,14 @@
   });
 
   /* ───────── Sizing ───────── */
-  let W = 1, H = 1;
+  let W = 1, H = 1, baseDist = 8.2;
+  const look = new T.Vector3(0, -0.05, 0), lookGoal = new T.Vector3(), aw = new T.Vector3();
   function resize() {
     W = wrap.clientWidth; H = wrap.clientHeight;
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
-    const dist = camera.aspect >= 1.25 ? 8.2 : 8.2 * (camera.aspect < 1 ? 1.02 : 1.25) / camera.aspect;
-    camera.position.set(0, 0.55, dist);
+    baseDist = camera.aspect >= 1.25 ? 8.2 : 8.2 * (camera.aspect < 1 ? 1.02 : 1.25) / camera.aspect;
+    camera.position.set(0, 0.55, baseDist);
     camera.lookAt(0, -0.05, 0);
     camera.updateProjectionMatrix();
   }
@@ -522,7 +539,7 @@
     // rotation: drag inertia, then ease toward the target, idle auto-spin
     if (!dragging) {
       if (Math.abs(vYaw) > 0.0004) { tYaw += vYaw * f60; vYaw *= Math.pow(0.93, f60); }
-      if (!reduce && now - lastInteract > 3500 && !swap) tYaw += 0.12 * dt;
+      if (!reduce && now - lastInteract > 3500 && !swap && !active) tYaw += 0.12 * dt;
     }
     yaw = lerp(yaw, tYaw, ease(dragging ? 0.35 : 0.08));
     pitch = lerp(pitch, tPitch, ease(0.08));
@@ -565,6 +582,18 @@
     }
     shadow.scale.multiplyScalar(pivot.scale.x);
 
+    // camera: dolly in toward the active part, back out when nothing is selected
+    zoom = lerp(zoom, active && !swap ? 1 : 0, ease(0.07));
+    lookGoal.set(0, -0.05, 0);
+    if (m && active && m.anchors[active.key]) {
+      pivot.updateMatrixWorld(true);
+      aw.copy(m.anchors[active.key].p); (m.craft || m.group).localToWorld(aw);
+      lookGoal.lerp(aw, 0.6);
+    }
+    look.lerp(lookGoal, ease(0.08));
+    camera.position.set(look.x * 0.6, 0.55 + look.y * 0.5, baseDist * (1 - 0.26 * zoom));
+    camera.lookAt(look);
+
     renderer.render(scene, camera);
 
     // hotspots follow their anchors and hide when they face away
@@ -583,6 +612,16 @@
         const vis = facing > 0.05;
         b.style.opacity = vis ? Math.min(1, facing * 3).toFixed(2) : '0';
         b.style.pointerEvents = vis ? 'auto' : 'none';
+        if (active === h) {
+          // beside the dot, flipped to the left near the right edge, and always kept inside the viewer
+          const x = (p.x + 1) / 2 * W, y = (1 - p.y) / 2 * H;
+          const cw = callout.offsetWidth, ch = callout.offsetHeight;
+          let cx = x + 24 + cw > W - 10 ? x - 24 - cw : x + 24;
+          let cy = y - ch / 2;
+          if (cx < 10) { cx = Math.min(Math.max(10, x - cw / 2), W - cw - 10); cy = y + 28; } // too narrow: drop below the dot
+          cy = Math.min(Math.max(10, cy), H - ch - 10);
+          callout.style.transform = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px)`;
+        }
       });
     } else spots.forEach(({ b }) => { b.style.opacity = 0; b.style.pointerEvents = 'none'; });
   }
