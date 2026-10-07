@@ -402,6 +402,7 @@
 
   /* ───────── Interaction ───────── */
   let angle = 0, target = 0, vel = 0;
+  let wheeling = false, wheelTimer = 0;
   let dragging = false, engaged = false, isTouch = false, startX = 0, lastX = 0, moved = 0, lastMoveT = 0, pressed = -1;
   const MAX_VEL = 0.055;    // caps how far a flick can throw the reel (about two frames), per 60fps frame
   const DRAG_GAIN = 1.1;    // 1 = film moves exactly with the finger; higher turns a little further
@@ -472,6 +473,25 @@
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
   canvas.addEventListener('pointerleave', () => { pointerIn = false; });
+  // Two-finger sideways swipe on a trackpad (or shift + mouse wheel) spins the reel like a drag.
+  // Mostly-vertical gestures are left alone so the page still scrolls normally.
+  canvas.addEventListener('wheel', e => {
+    let dx = e.deltaX || (e.shiftKey ? e.deltaY : 0);
+    if (!dx || (!e.shiftKey && Math.abs(e.deltaX) <= Math.abs(e.deltaY))) return;
+    e.preventDefault();                       // also stops the browser's swipe-to-go-back
+    if (e.deltaMode === 1) dx *= 16; else if (e.deltaMode === 2) dx *= innerWidth;
+    dismissHint();
+    if (!wheeling) { wheeling = true; dragAngle = angle; vel = 0; carry = 0; }
+    dragAngle -= dx / radiusPx * DRAG_GAIN;
+    lastInteract = performance.now();
+    clearTimeout(wheelTimer);
+    // the OS keeps sending momentum events after the fingers lift, so wait for them to stop, then settle on a frame
+    wheelTimer = setTimeout(() => {
+      wheeling = false;
+      carry = dragAngle - angle;
+      target = snap(angle + carry);
+    }, 140);
+  }, { passive: false });
   canvas.addEventListener('keydown', e => {
     if (e.key.startsWith('Arrow') || e.key === 'Enter' || e.key === ' ') dismissHint();
     if (e.key === 'ArrowRight') { e.preventDefault(); vel = 0; target = snap(target) - STEP; lastInteract = performance.now(); }
@@ -494,7 +514,7 @@
     const ease = k => (reduce ? 1 : 1 - Math.pow(1 - k, f60));
 
     // spin: drag → inertia → settle on a frame
-    if (dragging) {
+    if (dragging || wheeling) {
       angle = lerp(angle, dragAngle, ease(0.38));
     } else {
       if (carry) { const c = carry * ease(0.38); angle += c; carry = Math.abs(carry - c) < 1e-5 ? 0 : carry - c; }
@@ -507,7 +527,7 @@
       }
     }
     // autoplay: advance one frame every few seconds when nobody is touching it
-    if (!reduce && !dragging && !lbOpen && hovered < 0 && vel === 0 &&
+    if (!reduce && !dragging && !wheeling && !lbOpen && hovered < 0 && vel === 0 &&
         Math.abs(target - angle) < 0.003 && nowMs - lastInteract > 4200) {
       target -= STEP;
       lastInteract = nowMs;
@@ -545,7 +565,7 @@
 
     const fi = frontIndex();
     setNow(fi);
-    const settled = Math.abs(target - angle) < 0.02 && !dragging && vel === 0;
+    const settled = Math.abs(target - angle) < 0.02 && !dragging && !wheeling && vel === 0;
 
     for (const f of frames) {
       const isHover = f.i === hovered;

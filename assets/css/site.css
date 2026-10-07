@@ -230,7 +230,7 @@ button { font: inherit; color: inherit; }
 .hero-foot {
   grid-row: 3;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end;
   gap: 16px;
   font-size: 13px;
@@ -250,9 +250,9 @@ button { font: inherit; color: inherit; }
 }
 .ns-kind { font-family: var(--f-serif); font-style: italic; font-size: 16px; color: var(--night-2); }
 .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: swap .6s var(--ease-out); }
-/* The big reel already shows the front title, so on wider screens only the counter stays visible. */
+/* On wider screens the glass capsule shows the counter and the front project's title; the kind stays hidden to keep it compact. */
 @media (min-width: 761px) {
-  .now-showing .ns-title, .now-showing .ns-kind { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .now-showing .ns-kind { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 @keyframes swap { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } }
 @media (max-width: 760px) {
@@ -878,7 +878,8 @@ body::after {
 .site-nav.solid-dark .nav { background: linear-gradient(160deg, rgba(40, 40, 40, .55), rgba(10, 10, 10, .45)); }
 
 /* Reel counter: a glass capsule floating over the film */
-.now-showing { padding: 10px 22px 12px; border-radius: 22px; min-width: 190px; }
+.now-showing { padding: 9px 24px 11px; border-radius: 22px; min-width: 190px; width: max-content; max-width: 100%; justify-self: center; }
+.now-showing .ns-title { font-size: clamp(13px, 1.1vw, 16px); white-space: nowrap; letter-spacing: -.02em; }
 /* Card tags: small glass chips over the thumbnails */
 .card-tag, .card-len { padding: 5px 10px; border-radius: 999px; top: 12px; }
 .card-len:empty { display: none; }
