@@ -36,15 +36,20 @@
 }
 #cur.locked.s-link .pt { opacity: 1; background: var(--cursor-accent); }
 
+/* Label pill: size, position, blur and opacity are all driven by springs in cursor.js. */
 #cur .tag {
-  position: fixed; left: 0; top: 0; padding: 7px 14px 8px; border-radius: 999px;
-  background: #fff; color: var(--cursor-ink);
-  font: 500 12.5px/1.2 "Poppins", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em;
-  white-space: nowrap; translate: -50% -50%; scale: .4; opacity: 0;
-  transition: opacity .25s, scale .45s cubic-bezier(.2, .8, .2, 1);
+  position: fixed; left: 0; top: 0; width: 16px; height: 16px;
+  display: grid; place-items: center; overflow: hidden;
+  border-radius: 999px; background: #fff; color: var(--cursor-ink);
+  font: 500 12.5px/1 "Poppins", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em;
+  white-space: nowrap; opacity: 0;
+  will-change: translate, transform, width, height, opacity, filter;
+  transition: background-color .35s, color .35s;
 }
-#cur.locked.s-play .tag, #cur.locked.s-drag .tag { opacity: 1; scale: 1; }
-#cur.down .tag { scale: .9; }
+#cur .tag-measure {
+  position: fixed; left: -9999px; top: 0; visibility: hidden; white-space: nowrap;
+  font: 500 12.5px/1 "Poppins", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em;
+}
 
 /* On dark sections (mark the section with data-dark) the cursor flips to white. */
 #cur.on-dark .hl { background: #fff; }
