@@ -702,6 +702,84 @@ button { font: inherit; color: inherit; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translateY(24px) scale(.97); } }
 
+/* ═════════ Ethereal layer: soft glows, bevelled titles, light leaks, grain ═════════
+   Kept deliberately faint. Glows are layered text-shadows (no blur filters to repaint),
+   bevels are gradients clipped to the letters. */
+
+/* Glowing words on black: a white bloom with a crimson haze that slowly breathes */
+.hero-title .script,
+.contact-title .script {
+  text-shadow: 0 0 .18em rgba(255, 255, 255, .55), 0 0 .6em rgba(255, 255, 255, .22), 0 0 1.4em rgba(179, 18, 46, .45);
+  animation: breathe 6s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% { text-shadow: 0 0 .22em rgba(255, 255, 255, .7), 0 0 .8em rgba(255, 255, 255, .3), 0 0 1.8em rgba(179, 18, 46, .6); }
+}
+.hero .scribble svg { filter: drop-shadow(0 0 4px rgba(179, 18, 46, .9)) drop-shadow(0 0 14px rgba(179, 18, 46, .5)); }
+.hero-title { text-shadow: 0 0 40px rgba(255, 255, 255, .14); }
+
+/* Anamorphic flare: a thin horizontal streak of light behind the hero headline */
+.hero-copy::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  left: 50%; top: 58%; width: min(120vw, 1500px); height: 140px; translate: -50% -50%;
+  background:
+    radial-gradient(50% 3% at 50% 50%, rgba(255, 255, 255, .22), transparent),
+    radial-gradient(42% 22% at 50% 50%, rgba(179, 18, 46, .16), transparent),
+    radial-gradient(18% 40% at 50% 50%, rgba(255, 255, 255, .05), transparent);
+  animation: flare 9s ease-in-out infinite alternate;
+}
+@keyframes flare { from { opacity: .65; transform: scaleX(.92); } to { opacity: 1; transform: scaleX(1.06); } }
+
+/* Bevelled title on white: satin black lit from above, resting on a soft shadow */
+.work-title {
+  background: linear-gradient(180deg, #555 0%, #1a1a1a 32%, #000 62%, #262626 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .9)) drop-shadow(0 18px 24px rgba(0, 0, 0, .12));
+}
+.work-title em, .work-title sup { -webkit-text-fill-color: currentColor; }
+/* Emphasised words on white: a faint crimson light bleeding through from behind */
+.work-title em,
+.about-title .script { text-shadow: 0 0 .35em rgba(179, 18, 46, .22), 0 0 1em rgba(179, 18, 46, .12); }
+
+/* Bevelled title on black: bright white catching the light, falling to silver */
+.contact-title {
+  background: linear-gradient(180deg, #fff 0%, #fff 38%, #c9c9c9 72%, #8d8d8d 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.contact-title .script { -webkit-text-fill-color: #fff; }
+
+/* Signature: a soft halo, like light behind a title card */
+.footer-sign { text-shadow: 0 0 .12em rgba(255, 255, 255, .35), 0 0 .5em rgba(179, 18, 46, .35); }
+
+/* Light leaks drifting across the white sections, barely there */
+.sheet { isolation: isolate; }
+.sheet::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(40vw 30vw at 92% 4%, rgba(255, 196, 150, .14), transparent 70%),
+    radial-gradient(34vw 26vw at 4% 30%, rgba(179, 18, 46, .05), transparent 70%),
+    radial-gradient(38vw 30vw at 96% 62%, rgba(150, 175, 255, .07), transparent 70%),
+    radial-gradient(36vw 28vw at 8% 88%, rgba(255, 196, 150, .1), transparent 70%);
+}
+
+/* Video glows: playing cards bloom, the player floats on light */
+.card-media { transition: box-shadow .6s var(--ease-out); }
+.card.playing .card-media { box-shadow: 0 30px 70px -28px rgba(179, 18, 46, .4), 0 0 0 1px rgba(255, 255, 255, .04); }
+.lb-video { box-shadow: 0 0 90px rgba(255, 255, 255, .06), 0 30px 120px -20px rgba(179, 18, 46, .3); }
+
+/* Film grain over everything, very faint */
+body::after {
+  content: ""; position: fixed; inset: -50%; z-index: 9000; pointer-events: none; opacity: .045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 1.2s steps(6) infinite;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal, .hero-glow, .lb-backdrop, .spin-hint.show .sh-inner, .spin-hint.hide .sh-inner, .lb-panel, .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: none; }
   .scribble path, .spin-hint.show .sh-arrow path { animation: none; stroke-dashoffset: 0; }
@@ -709,6 +787,7 @@ button { font: inherit; color: inherit; }
   .spin-hint.hide .sh-inner { opacity: 0; }
   .js .rv { opacity: 1; transform: none; filter: none; transition: none; }
   .card.playing .card-leak, .card.playing .card-progress i { animation: none; }
+  .hero-title .script, .contact-title .script, .hero-copy::before, body::after { animation: none; }
 }
 
 /* Anchor jumps land below the fixed nav, and glide unless reduced motion is on. */
