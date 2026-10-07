@@ -338,7 +338,7 @@
   }
 
   /* ───────── Sizing ───────── */
-  let W = 0, H = 0;
+  let W = 0, H = 0, radiusPx = 400;
   function resize() {
     W = hero.clientWidth; H = hero.clientHeight;
     renderer.setSize(W, H, false);
@@ -351,13 +351,20 @@
     camera.updateProjectionMatrix();
     scene.fog.near = dist - R * 0.3;
     scene.fog.far = dist + R * 1.7;
+    // How many screen pixels the reel's radius covers, so a drag moves the film about as far as your finger.
+    tilt.updateMatrixWorld(true);
+    const c0 = new THREE.Vector3(0, 0, 0).applyMatrix4(tilt.matrixWorld).project(camera);
+    const c1 = new THREE.Vector3(R, 0, 0).applyMatrix4(tilt.matrixWorld).project(camera);
+    radiusPx = Math.max(120, Math.abs(c1.x - c0.x) * W / 2 / tilt.scale.x);
   }
   resize();
   addEventListener('resize', resize);
 
   /* ───────── Interaction ───────── */
   let angle = 0, target = 0, vel = 0;
-  let dragging = false, lastX = 0, moved = 0, lastMoveT = 0, pressed = -1;
+  let dragging = false, engaged = false, isTouch = false, startX = 0, lastX = 0, moved = 0, lastMoveT = 0, pressed = -1;
+  const MAX_VEL = 0.045;    // caps how far a flick can throw the reel (about two frames)
+  const TOUCH_SLOP = 10;    // px a finger must move sideways before the reel starts turning
   let hovered = -1, pointerIn = false, lastInteract = performance.now();
   const mouse = new THREE.Vector2();
   const ray = new THREE.Raycaster();
@@ -380,7 +387,9 @@
     dismissHint();
     pressed = hovered;   // remember which frame was under the pointer when the press started
     dragging = true; moved = 0; vel = 0;
-    lastX = e.clientX; lastMoveT = performance.now();
+    isTouch = e.pointerType !== 'mouse';
+    engaged = !isTouch;
+    startX = lastX = e.clientX; lastMoveT = performance.now();
     canvas.setPointerCapture(e.pointerId);
     lastInteract = performance.now();
   });
@@ -389,19 +398,27 @@
     const r = canvas.getBoundingClientRect();
     mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     if (!dragging) return;
+    if (!engaged) {
+      // On touch, ignore small sideways wobble so scrolling the page doesn't turn the reel.
+      moved = Math.abs(e.clientX - startX);
+      if (moved < TOUCH_SLOP) return;
+      engaged = true;
+      lastX = e.clientX;
+    }
     const dx = e.clientX - lastX;
     lastX = e.clientX;
     moved += Math.abs(dx);
-    const d = dx * (Math.PI * 1.25) / Math.max(W, 1);
+    const d = dx / radiusPx * 0.95;
     angle += d;
-    vel = vel * 0.4 + d * 0.6;
+    vel = Math.max(-MAX_VEL, Math.min(MAX_VEL, vel * 0.4 + d * 0.6));
     lastMoveT = performance.now();
     lastInteract = lastMoveT;
   });
   const endDrag = e => {
     if (!dragging) return;
     dragging = false;
-    if (performance.now() - lastMoveT > 90) vel = 0;
+    // pointercancel means the browser took over (usually a vertical page scroll): stop where we are.
+    if (e.type === 'pointercancel' || performance.now() - lastMoveT > 90) vel = 0;
     if (moved < 6 && e.type === 'pointerup' && pressed >= 0) { vel = 0; goTo(pressed, true); return; }
     if (Math.abs(vel) < 0.002) { vel = 0; target = snap(angle); }
   };
@@ -428,7 +445,7 @@
     if (!dragging) {
       if (Math.abs(vel) > 0.0015) {
         angle += vel;
-        vel *= 0.94;
+        vel *= 0.92;
         if (Math.abs(vel) <= 0.0015) { vel = 0; target = snap(angle); }
       } else {
         angle = lerp(angle, target, reduce ? 1 : 0.075);
