@@ -7,13 +7,15 @@ Everything that's placeholder lives in a few small files. You never need to touc
 
 | Field | What to put |
 | --- | --- |
-| `title`, `kind`, `year`, `length` | Shown on the reel frames, cards and lightbox. `kind` also creates the filter chips. |
-| `youtube` | The video ID from the link: `youtube.com/watch?v=`**`dQw4w9WgXcQ`** or `youtu.be/`**`dQw4w9WgXcQ`**. Clicking the project plays it, and its YouTube thumbnail is used automatically. |
-| `poster` | Optional still image instead of the YouTube thumbnail, e.g. `assets/img/projects/friday-night-lights.jpg`. |
-| `preview` | Optional short silent loop (3–6s, ~720p `.mp4`) that plays when someone hovers the card, e.g. `assets/video/previews/friday-night-lights.mp4`. |
-| `tint` | Two colours for the placeholder gradient. Ignored once there's a poster or YouTube ID. |
+| `title`, `kind` | Shown on the reel frames, cards and player. `kind` also creates the filter chips. |
+| `year`, `length` | Optional. Leave them `''` and they're hidden. |
+| `youtube` | The video ID from the link: `youtube.com/watch?v=`**`ID`**, `youtu.be/`**`ID`** or `youtube.com/shorts/`**`ID`**. Clicking plays it, and the YouTube thumbnail is used automatically. |
+| `vertical` | `true` for Shorts / 9:16 videos — they get a phone-shaped frame and a tall player. |
+| `poster` | Optional still image instead of the YouTube thumbnail, e.g. `assets/img/projects/kids-for-peace.jpg`. |
+| `preview` | Optional short silent loop (3–6s, ~720p `.mp4`) that plays when someone hovers the card. |
+| `tint` | Two colours for the backdrop while the thumbnail loads. |
 
-Order in the file = order on the reel and in the grid.
+Order in the file = order on the reel and in the grid. With fewer than 9 projects, the reel repeats them around the loop.
 
 ## About (scrapbook + bio)
 In `index.html`, search for `ABOUT (scrapbook)`.
@@ -27,7 +29,7 @@ In `index.html`, search for `ABOUT (scrapbook)`.
 - Social links (Instagram, TikTok, YouTube) are in the contact section and the phone menu in `index.html`.
 
 ## Headline copy
-Hero: search `index.html` for `hit harder`. Work, Gear, About and Contact intros are right under each section's heading.
+Hero: search `index.html` for `hit harder`. Work, About and Contact intros are right under each section's heading.
 
 ## Fonts — before launch
 - **Aston Script is a demo file.** It replaces numbers with an "Aston" watermark, which is why nothing set in the script font contains digits. Buy the full licence and replace `fonts/src/Aston Script.ttf`, then regenerate `fonts/aston-script.woff2`.

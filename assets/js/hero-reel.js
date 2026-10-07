@@ -5,8 +5,14 @@
   const canvas = document.getElementById('reel');
   if (!canvas) return;
   const hero = canvas.closest('.hero');
-  const P = window.PROJECTS || [];
+  // The reel needs enough frames to look like a loop of film, so short project lists repeat around it.
+  // P = frames on the reel (each remembers its project as _i); SRC = the real projects.
+  const SRC = window.PROJECTS || [];
+  const P = [];
+  const reps = SRC.length ? Math.max(1, Math.ceil(9 / SRC.length)) : 0;
+  for (let r = 0; r < reps; r++) SRC.forEach((p, k) => P.push(Object.assign({}, p, { _i: k })));
   const N = P.length;
+  const meta = window.projectMeta || (p => p.kind);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const pad2 = n => String(n).padStart(2, '0');
   const mod = (a, n) => ((a % n) + n) % n;
@@ -26,7 +32,7 @@
 
   /* ───────── Lightbox (lives in lightbox.js, shared with the work grid) ───────── */
   let lbOpen = false;
-  const openProject = i => { dismissHint(); window.Lightbox.open(i); };
+  const openProject = i => { dismissHint(); window.Lightbox.open(P[i]._i); };
   addEventListener('lightbox:change', e => {
     lbOpen = e.detail.open;
     if (lbOpen) dismissHint();
@@ -35,15 +41,15 @@
 
   /* ───────── Accessible list (and fallback when WebGL is missing) ───────── */
   const list = document.getElementById('reel-list');
-  P.forEach((p, i) => {
+  SRC.forEach((p, i) => {
     const li = document.createElement('li');
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.cursor = 'link';
     const t = document.createElement('b'); t.textContent = p.title;
-    const k = document.createElement('i'); k.textContent = `${p.kind} · ${p.year}`;
+    const k = document.createElement('i'); k.textContent = meta(p, ['kind', 'year']);
     b.append(t, k);
-    b.addEventListener('click', () => openProject(i));
+    b.addEventListener('click', () => { dismissHint(); window.Lightbox.open(i); });
     li.append(b);
     list.append(li);
   });
@@ -53,12 +59,12 @@
   const nsIndex = document.getElementById('ns-index');
   const nsTitle = document.getElementById('ns-title');
   const nsKind = document.getElementById('ns-kind');
-  document.getElementById('ns-total').textContent = pad2(N);
+  document.getElementById('ns-total').textContent = pad2(SRC.length);
   let shown = -1;
   function setNow(i) {
     if (i === shown) return;
     shown = i;
-    nsIndex.textContent = pad2(i + 1);
+    nsIndex.textContent = pad2(P[i]._i + 1);
     nsTitle.textContent = P[i].title;
     nsKind.textContent = P[i].kind;
     ns.classList.remove('swap'); void ns.offsetWidth; ns.classList.add('swap');
@@ -254,7 +260,20 @@
     f.bg.width = f.fg.width = W;
     f.bg.height = f.fg.height = H;
     const b = f.bg.getContext('2d');
-    if (f.img) {
+    if (f.img && p.vertical) {
+      // Shorts: blurred fill behind, the 9:16 picture (centre of the thumbnail) standing in the middle
+      const iw = f.img.width, ih = f.img.height, s = Math.max(W / iw, H / ih);
+      b.filter = 'blur(18px) brightness(.55)';
+      b.drawImage(f.img, (W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s);
+      b.filter = 'none';
+      const cw = ih * 9 / 16, ph = H * 0.84, pw = ph * 9 / 16;
+      b.save();
+      b.beginPath(); b.roundRect((W - pw) / 2, (H - ph) / 2, pw, ph, 14); b.clip();
+      b.drawImage(f.img, (iw - cw) / 2, 0, cw, ih, (W - pw) / 2, (H - ph) / 2, pw, ph);
+      b.restore();
+      b.fillStyle = 'rgba(0,0,0,.18)';
+      b.fillRect(0, 0, W, H);
+    } else if (f.img) {
       const s = Math.max(W / f.img.width, H / f.img.height);
       const w = f.img.width * s, h = f.img.height * s;
       b.drawImage(f.img, (W - w) / 2, (H - h) / 2, w, h);
@@ -279,9 +298,9 @@
     g.textAlign = 'left';
     g.fillStyle = 'rgba(255,255,255,.6)';
     g.font = '500 17px Poppins, sans-serif';
-    g.fillText(pad2(i + 1), 28, 42);
+    g.fillText(pad2(p._i + 1), 28, 42);
     g.textAlign = 'right';
-    g.fillText(p.length, W - 28, 42);
+    if (p.length) g.fillText(p.length, W - 28, 42);
     g.textAlign = 'left';
     const fit = fitTitle(g, p.title, W - 56);
     g.font = `800 ${fit.size}px "Akira Expanded", "Arial Black", sans-serif`;
@@ -291,7 +310,7 @@
     fit.lines.forEach((ln, k) => g.fillText(ln, 26, base - (fit.lines.length - 1 - k) * lh));
     g.font = 'italic 400 27px "Apple Garamond", Garamond, serif';
     g.fillStyle = 'rgba(255,255,255,.78)';
-    g.fillText(`${p.kind} · ${p.year}`, 28, H - 34);
+    g.fillText(meta(p, ['kind', 'year']), 28, H - 34);
   }
 
   // Composite one frame of "footage": background, drifting light leak, grain, then text on top.

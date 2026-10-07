@@ -18,8 +18,9 @@
     const p = P[i];
     if (!p) return;
     lbTitle.textContent = p.title;
-    lbKind.textContent = `${p.kind} · ${p.year} · ${p.length}`;
+    lbKind.textContent = window.projectMeta ? window.projectMeta(p) : p.kind;
     lbVideo.replaceChildren();
+    lbVideo.classList.toggle('vertical', !!p.vertical);   // Shorts play in a tall 9:16 player
     if (p.youtube) {
       const f = document.createElement('iframe');
       f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(p.youtube)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;

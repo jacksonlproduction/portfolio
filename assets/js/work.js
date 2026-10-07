@@ -18,7 +18,7 @@
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'card-link';
-    btn.setAttribute('aria-label', `Watch ${p.title}, ${p.kind.toLowerCase()}, ${p.year}`);
+    btn.setAttribute('aria-label', `Watch ${p.title}, ${(window.projectMeta ? window.projectMeta(p, ['kind', 'year']) : p.kind).toLowerCase()}`);
 
     const media = document.createElement('div');
     media.className = 'card-media';
@@ -30,11 +30,21 @@
       '<span class="card-zoom"></span><span class="card-leak"></span><span class="card-grain"></span>' +
       '<span class="card-tag">Preview</span><span class="card-len"></span><span class="card-num"></span>' +
       '<span class="card-progress"><i></i></span>';
-    media.querySelector('.card-len').textContent = p.length;
+    media.querySelector('.card-len').textContent = p.length || '';
     media.querySelector('.card-num').textContent = pad2(i + 1);
 
     const thumb = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
-    if (thumb) {
+    if (thumb && p.vertical) {
+      // Shorts: blurred thumbnail fills the card, the vertical frame stands in the middle like a phone
+      media.classList.add('vertical');
+      const bg = document.createElement('img');
+      bg.src = thumb; bg.alt = ''; bg.loading = 'lazy'; bg.className = 'card-bg';
+      const phone = document.createElement('span'); phone.className = 'card-phone';
+      const fg = document.createElement('img');
+      fg.src = thumb; fg.alt = ''; fg.loading = 'lazy';
+      phone.append(fg);
+      media.prepend(bg, phone);
+    } else if (thumb) {
       const img = document.createElement('img');
       img.src = thumb; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
       media.prepend(img);
@@ -52,9 +62,11 @@
     meta.className = 'card-meta';
     meta.innerHTML = '<h3 class="card-title"></h3><p class="card-year"></p><p class="card-kind"></p>';
     meta.querySelector('.card-title').textContent = p.title;
-    meta.querySelector('.card-year').textContent = p.year;
+    meta.querySelector('.card-year').textContent = p.year || '';
     meta.querySelector('.card-kind').textContent = p.kind;
 
+    // if a thumbnail can't load, hide it and let the tinted backdrop show instead of a broken image
+    media.querySelectorAll('img').forEach(im => im.addEventListener('error', () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; }));
     btn.append(media, meta);
     li.append(btn);
     grid.append(li);
