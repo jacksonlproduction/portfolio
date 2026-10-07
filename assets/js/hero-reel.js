@@ -5,7 +5,6 @@
   const canvas = document.getElementById('reel');
   if (!canvas) return;
   const hero = canvas.closest('.hero');
-  const glow = hero.querySelector('.hero-glow');
   const P = window.PROJECTS || [];
   const N = P.length;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -60,6 +59,7 @@
     document.documentElement.style.overflow = 'hidden';
     lb.querySelector('.lb-close').focus({ preventScroll: true });
     dispatchEvent(new Event('cursor:refresh'));
+    if (typeof syncRunning === 'function') syncRunning();
   }
   function closeProject() {
     if (!lbOpen) return;
@@ -69,6 +69,7 @@
     document.documentElement.style.overflow = '';
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
     dispatchEvent(new Event('cursor:refresh'));
+    if (typeof syncRunning === 'function') syncRunning();
   }
   lb.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeProject(); });
   addEventListener('keydown', e => { if (e.key === 'Escape') closeProject(); });
@@ -184,29 +185,56 @@
     t.anisotropy = renderer.capabilities.getMaxAnisotropy();
     return t;
   }
+  /* Motion blur: pictures and film edge smear along the direction of spin, scaled by speed.
+     Injected into Three's own materials so lighting, fog and colour handling stay the same. */
+  const blurFrame = { value: 0 }, blurBand = { value: 0 };
+  function addBlur(mat, uniform) {
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.uBlur = uniform;
+      sh.fragmentShader = 'uniform float uBlur;\n' + sh.fragmentShader.replace('#include <map_fragment>', `
+#ifdef USE_MAP
+  vec4 sampledDiffuseColor;
+  if (uBlur < 0.0005) {
+    sampledDiffuseColor = texture2D(map, vUv);
+  } else {
+    sampledDiffuseColor = vec4(0.0);
+    for (int k = 0; k < 12; k++) {
+      float o = (float(k) / 11.0 - 0.5) * uBlur;
+      sampledDiffuseColor += texture2D(map, vUv + vec2(o, 0.0));
+    }
+    sampledDiffuseColor /= 12.0;
+  }
+  diffuseColor *= sampledDiffuseColor;
+#endif`);
+    };
+    mat.customProgramCacheKey = () => 'reel-blur';
+    return mat;
+  }
+
   const bandTex = makeBandTexture();
   const band = new THREE.Mesh(
     new THREE.CylinderGeometry(R, R, H_BAND, 160, 1, true, -STEP / 2, Math.PI * 2),
-    new THREE.MeshStandardMaterial({ map: bandTex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.42, metalness: 0.25 })
+    addBlur(new THREE.MeshStandardMaterial({ map: bandTex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.42, metalness: 0.25 }), blurBand)
   );
   spin.add(band);
 
-  /* Film grain, drawn over every frame. */
-  const noise = document.createElement('canvas');
-  noise.width = noise.height = 192;
-  {
-    const g = noise.getContext('2d');
-    const d = g.createImageData(192, 192);
+  /* Film grain: three pre-baked layers cycled while a frame plays (cheap to draw, no blend modes). */
+  const FW = 640, FH = Math.round(640 * H_FRAME / (R * ARC));
+  const grains = [0, 1, 2].map(() => {
+    const c = document.createElement('canvas');
+    c.width = FW; c.height = FH;
+    const g = c.getContext('2d');
+    const d = g.createImageData(FW, FH);
     for (let k = 0; k < d.data.length; k += 4) {
-      const v = Math.random() * 255;
+      const v = Math.random() < 0.5 ? 0 : 255;
       d.data[k] = d.data[k + 1] = d.data[k + 2] = v;
-      d.data[k + 3] = 255;
+      d.data[k + 3] = Math.random() * 30;
     }
     g.putImageData(d, 0, 0);
-  }
+    return c;
+  });
 
   /* One frame per project. Front faces show the picture; back faces show it mirrored and dim, like light through film. */
-  const FW = 640, FH = Math.round(640 * H_FRAME / (R * ARC));
   const frames = P.map((p, i) => {
     const c = document.createElement('canvas');
     c.width = FW; c.height = FH;
@@ -215,11 +243,11 @@
     tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     const front = new THREE.Mesh(
       new THREE.CylinderGeometry(R + 0.006, R + 0.006, H_FRAME, 40, 1, true, -ARC / 2, ARC),
-      new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide })
+      addBlur(new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide }), blurFrame)
     );
     const back = new THREE.Mesh(
       new THREE.CylinderGeometry(R - 0.006, R - 0.006, H_FRAME, 40, 1, true, -ARC / 2, ARC),
-      new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, color: 0x5a5a5a })
+      addBlur(new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, color: 0x5a5a5a }), blurFrame)
     );
     front.userData.index = i;
     const lift = new THREE.Group();
@@ -228,12 +256,12 @@
     pivot.rotation.y = i * STEP;
     pivot.add(lift);
     spin.add(pivot);
-    const f = { p, i, c, g: c.getContext('2d'), tex, front, lift, pop: 0, play: 0, dim: 1, img: null };
+    const f = { p, i, c, g: c.getContext('2d'), tex, front, lift, pop: 0, play: 0, dim: 1, img: null, bg: null, fg: null, lastDraw: 0 };
     const src = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
     if (src) {
       const im = new Image();
       im.crossOrigin = 'anonymous';
-      im.onload = () => { f.img = im; draw(f, performance.now() / 1000); };
+      im.onload = () => { f.img = im; bake(f); draw(f, performance.now() / 1000); };
       im.src = src;
     }
     return f;
@@ -258,44 +286,36 @@
     return { size: 22, lines: [text.toUpperCase()] };
   }
 
-  function draw(f, t) {
-    const { g, p, i } = f;
-    const W = FW, H = FH, ph = f.play;
+  // Static layers for each frame, rebuilt only when fonts or a poster image arrive.
+  function bake(f) {
+    const { p, i } = f;
+    const W = FW, H = FH;
+    f.bg = f.bg || document.createElement('canvas');
+    f.fg = f.fg || document.createElement('canvas');
+    f.bg.width = f.fg.width = W;
+    f.bg.height = f.fg.height = H;
+    const b = f.bg.getContext('2d');
     if (f.img) {
       const s = Math.max(W / f.img.width, H / f.img.height);
       const w = f.img.width * s, h = f.img.height * s;
-      g.drawImage(f.img, (W - w) / 2, (H - h) / 2, w, h);
-      g.fillStyle = 'rgba(0,0,0,.35)';
-      g.fillRect(0, 0, W, H);
+      b.drawImage(f.img, (W - w) / 2, (H - h) / 2, w, h);
+      b.fillStyle = 'rgba(0,0,0,.35)';
+      b.fillRect(0, 0, W, H);
     } else {
-      const gr = g.createLinearGradient(0, 0, W, H);
+      const gr = b.createLinearGradient(0, 0, W, H);
       gr.addColorStop(0, p.tint[0]);
       gr.addColorStop(1, p.tint[1]);
-      g.fillStyle = gr;
-      g.fillRect(0, 0, W, H);
-      // a drifting light leak stands in for footage
-      const lx = W * (0.3 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.7 + i * 1.7)));
-      const ly = H * (0.45 + 0.2 * Math.cos(t * 0.5 + i));
-      const rg = g.createRadialGradient(lx, ly, 0, lx, ly, W * 0.55);
-      rg.addColorStop(0, `rgba(255, 205, 185, ${0.08 + 0.2 * ph})`);
-      rg.addColorStop(1, 'rgba(255, 205, 185, 0)');
-      g.fillStyle = rg;
-      g.fillRect(0, 0, W, H);
+      b.fillStyle = gr;
+      b.fillRect(0, 0, W, H);
     }
-    // grain (it shimmers while playing)
-    g.save();
-    g.globalAlpha = 0.07 + 0.05 * ph;
-    g.globalCompositeOperation = 'overlay';
-    const ox = ph > 0.02 ? -Math.floor(Math.random() * 192) : 0, oy = ph > 0.02 ? -Math.floor(Math.random() * 192) : 0;
-    for (let x = ox; x < W; x += 192) for (let y = oy; y < H; y += 192) g.drawImage(noise, x, y);
-    g.restore();
+    const g = f.fg.getContext('2d');
+    g.clearRect(0, 0, W, H);
     // vignette for legibility
     const vg = g.createLinearGradient(0, H * 0.35, 0, H);
     vg.addColorStop(0, 'rgba(0,0,0,0)');
     vg.addColorStop(1, 'rgba(0,0,0,.55)');
     g.fillStyle = vg;
     g.fillRect(0, 0, W, H);
-
     g.textBaseline = 'alphabetic';
     g.textAlign = 'left';
     g.fillStyle = 'rgba(255,255,255,.6)';
@@ -304,18 +324,37 @@
     g.textAlign = 'right';
     g.fillText(p.length, W - 28, 42);
     g.textAlign = 'left';
-
     const fit = fitTitle(g, p.title, W - 56);
     g.font = `800 ${fit.size}px "Akira Expanded", "Arial Black", sans-serif`;
     g.fillStyle = '#fff';
     const lh = fit.size * 0.98;
     const base = H - 74;
     fit.lines.forEach((ln, k) => g.fillText(ln, 26, base - (fit.lines.length - 1 - k) * lh));
-
     g.font = 'italic 400 27px "Apple Garamond", Garamond, serif';
     g.fillStyle = 'rgba(255,255,255,.78)';
     g.fillText(`${p.kind} · ${p.year}`, 28, H - 34);
+  }
 
+  // Composite one frame of "footage": background, drifting light leak, grain, then text on top.
+  let grainTick = 0;
+  function draw(f, t) {
+    if (!f.bg) bake(f);
+    const { g, i } = f;
+    const W = FW, H = FH, ph = f.play;
+    g.drawImage(f.bg, 0, 0);
+    if (!f.img) {
+      const lx = W * (0.3 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.7 + i * 1.7)));
+      const ly = H * (0.45 + 0.2 * Math.cos(t * 0.5 + i));
+      const rg = g.createRadialGradient(lx, ly, 0, lx, ly, W * 0.55);
+      rg.addColorStop(0, `rgba(255, 205, 185, ${0.08 + 0.2 * ph})`);
+      rg.addColorStop(1, 'rgba(255, 205, 185, 0)');
+      g.fillStyle = rg;
+      g.fillRect(0, 0, W, H);
+    }
+    g.globalAlpha = 0.55 + 0.45 * ph;
+    g.drawImage(grains[ph > 0.02 ? (grainTick++ % 3) : 0], 0, 0);
+    g.globalAlpha = 1;
+    g.drawImage(f.fg, 0, 0);
     if (ph > 0.01) {
       const prog = (t * 0.07 + i * 0.137) % 1;
       g.fillStyle = `rgba(255,255,255,${0.18 * ph})`;
@@ -323,6 +362,7 @@
       g.fillStyle = `rgba(179,18,46,${ph})`;
       g.fillRect(28, H - 16, (W - 56) * prog, 2);
     }
+    f.lastDraw = t;
     f.tex.needsUpdate = true;
   }
 
@@ -331,7 +371,7 @@
     Promise.all([
       '800 40px "Akira Expanded"', 'italic 400 24px "Apple Garamond"', '500 17px Poppins', '600 15px Poppins'
     ].map(s => document.fonts.load(s))).then(() => {
-      frames.forEach(f => draw(f, 0));
+      frames.forEach(f => { bake(f); draw(f, 0); });
       const nt = makeBandTexture();
       band.material.map = nt; band.material.needsUpdate = true; bandTex.dispose();
     }).catch(() => {});
@@ -363,7 +403,9 @@
   /* ───────── Interaction ───────── */
   let angle = 0, target = 0, vel = 0;
   let dragging = false, engaged = false, isTouch = false, startX = 0, lastX = 0, moved = 0, lastMoveT = 0, pressed = -1;
-  const MAX_VEL = 0.045;    // caps how far a flick can throw the reel (about two frames)
+  const MAX_VEL = 0.055;    // caps how far a flick can throw the reel (about two frames), per 60fps frame
+  const DRAG_GAIN = 1.1;    // 1 = film moves exactly with the finger; higher turns a little further
+  let dragAngle = 0, carry = 0; // pointer events arrive unevenly, so the reel eases toward dragAngle each frame
   const TOUCH_SLOP = 10;    // px a finger must move sideways before the reel starts turning
   let hovered = -1, pointerIn = false, lastInteract = performance.now();
   const mouse = new THREE.Vector2();
@@ -386,7 +428,8 @@
     if (e.button !== 0) return;
     dismissHint();
     pressed = hovered;   // remember which frame was under the pointer when the press started
-    dragging = true; moved = 0; vel = 0;
+    dragging = true; moved = 0; vel = 0; carry = 0;
+    dragAngle = angle;
     isTouch = e.pointerType !== 'mouse';
     engaged = !isTouch;
     startX = lastX = e.clientX; lastMoveT = performance.now();
@@ -408,19 +451,22 @@
     const dx = e.clientX - lastX;
     lastX = e.clientX;
     moved += Math.abs(dx);
-    const d = dx / radiusPx * 0.95;
-    angle += d;
-    vel = Math.max(-MAX_VEL, Math.min(MAX_VEL, vel * 0.4 + d * 0.6));
-    lastMoveT = performance.now();
-    lastInteract = lastMoveT;
+    const d = dx / radiusPx * DRAG_GAIN;
+    dragAngle += d;
+    const now = performance.now();
+    const per60 = d / (Math.max(4, now - lastMoveT) / 16.667); // speed as if sampled at 60fps
+    vel = Math.max(-MAX_VEL, Math.min(MAX_VEL, vel * 0.5 + per60 * 0.5));
+    lastMoveT = now;
+    lastInteract = now;
   });
   const endDrag = e => {
     if (!dragging) return;
     dragging = false;
+    carry = dragAngle - angle;   // finish the bit of drag the eased reel hadn't caught up to yet
     // pointercancel means the browser took over (usually a vertical page scroll): stop where we are.
     if (e.type === 'pointercancel' || performance.now() - lastMoveT > 90) vel = 0;
     if (moved < 6 && e.type === 'pointerup' && pressed >= 0) { vel = 0; goTo(pressed, true); return; }
-    if (Math.abs(vel) < 0.002) { vel = 0; target = snap(angle); }
+    if (Math.abs(vel) < 0.002) { vel = 0; target = snap(angle + carry); }
   };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
@@ -434,21 +480,29 @@
 
   /* ───────── Loop ───────── */
   const lerp = (a, b, k) => a + (b - a) * k;
-  let running = true, raf = 0, prevAngle = angle, boost = 0, lastBoost = -1, tick = 0;
+  const glowBoost = hero.querySelector('.hero-glow-boost');
+  let running = true, raf = 0, prevRot = angle, boost = 0, lastBoost = -1, lastT = 0, blurSm = 0;
 
   function frame(nowMs) {
     raf = requestAnimationFrame(frame);
     const t = nowMs / 1000;
-    tick++;
+    // Time-based easing so motion feels the same on 60Hz and 120Hz screens.
+    const dt = lastT ? Math.min(0.05, (nowMs - lastT) / 1000) : 1 / 60;
+    lastT = nowMs;
+    const f60 = dt * 60;
+    const ease = k => (reduce ? 1 : 1 - Math.pow(1 - k, f60));
 
     // spin: drag → inertia → settle on a frame
-    if (!dragging) {
+    if (dragging) {
+      angle = lerp(angle, dragAngle, ease(0.38));
+    } else {
+      if (carry) { const c = carry * ease(0.38); angle += c; carry = Math.abs(carry - c) < 1e-5 ? 0 : carry - c; }
       if (Math.abs(vel) > 0.0015) {
-        angle += vel;
-        vel *= 0.92;
-        if (Math.abs(vel) <= 0.0015) { vel = 0; target = snap(angle); }
-      } else {
-        angle = lerp(angle, target, reduce ? 1 : 0.075);
+        angle += vel * f60;
+        vel *= Math.pow(0.92, f60);
+        if (Math.abs(vel) <= 0.0015) { vel = 0; target = snap(angle + carry); }
+      } else if (!carry) {
+        angle = lerp(angle, target, ease(0.075));
       }
     }
     // autoplay: advance one frame every few seconds when nobody is touching it
@@ -476,8 +530,8 @@
     }
 
     // intro settle
-    tilt.scale.setScalar(lerp(tilt.scale.x, 1, 0.045));
-    tilt.rotation.x = lerp(tilt.rotation.x, TILT.x, 0.045);
+    tilt.scale.setScalar(lerp(tilt.scale.x, 1, ease(0.045)));
+    tilt.rotation.x = lerp(tilt.rotation.x, TILT.x, ease(0.045));
 
     // hover
     hovered = -1;
@@ -498,22 +552,31 @@
 
     for (const f of frames) {
       const isHover = f.i === hovered;
-      f.pop = lerp(f.pop, isHover ? 1 : 0, 0.12);
+      f.pop = lerp(f.pop, isHover ? 1 : 0, ease(0.12));
       f.lift.position.z = f.pop * 0.2;
       f.lift.scale.setScalar(1 + f.pop * 0.035);
-      f.dim = lerp(f.dim, hovered >= 0 && !isHover ? 0.5 : 1, 0.1);
+      f.dim = lerp(f.dim, hovered >= 0 && !isHover ? 0.5 : 1, ease(0.1));
       f.front.material.color.setScalar(f.dim);
       const wantPlay = isHover || (hovered < 0 && settled && f.i === fi) ? 1 : 0;
-      f.play = lerp(f.play, wantPlay, 0.08);
-      if (f.play > 0.01 && tick % 2 === 0) draw(f, t);
+      f.play = lerp(f.play, wantPlay, ease(0.08));
+      // the "footage" on a frame updates at 24fps, like film, while the reel itself moves at full frame rate
+      if (f.play > 0.01 && t - f.lastDraw >= 1 / 24) draw(f, t);
       else if (f.play <= 0.01 && f.play > 0.0005) { f.play = 0; draw(f, t); }
     }
 
-    // glow reacts to spin speed and hover
-    const speed = Math.abs(angle - prevAngle);
-    prevAngle = angle;
-    boost = lerp(boost, Math.min(1, speed * 22 + (hovered >= 0 ? 0.35 : 0)), 0.08);
-    if (Math.abs(boost - lastBoost) > 0.01) { glow.style.setProperty('--boost', boost.toFixed(3)); lastBoost = boost; }
+    // angular speed of what's on screen (rad/s), including the hint wiggle
+    const rot = spin.rotation.y;
+    const omega = Math.abs(rot - prevRot) / dt;
+    prevRot = rot;
+
+    // motion blur like a film camera's 180° shutter at 24fps (1/48s of motion); slow drifts stay sharp
+    blurSm = lerp(blurSm, reduce ? 0 : Math.min(0.14, Math.max(0, omega - 0.35) / 48), ease(0.35));
+    blurFrame.value = blurSm / ARC;
+    blurBand.value = blurSm / (Math.PI * 2) * N;
+
+    // glow reacts to spin speed and hover (opacity only, so the browser never repaints the blur)
+    boost = lerp(boost, Math.min(1, omega * 0.35 + (hovered >= 0 ? 0.35 : 0)), ease(0.08));
+    if (glowBoost && Math.abs(boost - lastBoost) > 0.01) { glowBoost.style.opacity = boost.toFixed(3); lastBoost = boost; }
 
     renderer.render(scene, camera);
   }
@@ -521,11 +584,14 @@
   function setRunning(on) {
     if (on === running) return;
     running = on;
+    lastT = 0;
     if (on) raf = requestAnimationFrame(frame);
     else cancelAnimationFrame(raf);
   }
+  // The reel pauses while offscreen, while the tab is hidden, and while a project is open on top of it.
+  var syncRunning = () => setRunning(onScreen && !document.hidden && !lbOpen);
   raf = requestAnimationFrame(frame);
   let onScreen = true;
-  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; setRunning(onScreen && !document.hidden); }).observe(hero);
-  document.addEventListener('visibilitychange', () => setRunning(onScreen && !document.hidden));
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; syncRunning(); }).observe(hero);
+  document.addEventListener('visibilitychange', syncRunning);
 })();

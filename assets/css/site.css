@@ -62,7 +62,7 @@ button { font: inherit; color: inherit; }
   padding-block: max(20px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-bottom));
 }
 
-.hero-glow {
+.hero-glow, .hero-glow-boost {
   position: absolute;
   left: 50%; top: 62%;
   width: min(120vw, 1500px);
@@ -70,12 +70,22 @@ button { font: inherit; color: inherit; }
   translate: -50% -50%;
   z-index: -1;
   pointer-events: none;
+  will-change: transform, opacity;
+}
+/* Radial gradients are already soft, so no CSS blur filter (that was costly to repaint on phones). */
+.hero-glow {
   background:
-    radial-gradient(closest-side, rgba(255, 236, 228, calc(.10 + var(--boost, 0) * .08)), transparent 45%),
-    radial-gradient(closest-side, rgba(179, 18, 46, calc(.34 + var(--boost, 0) * .22)), rgba(179, 18, 46, .08) 60%, transparent);
-  filter: blur(40px);
-  scale: calc(1 + var(--boost, 0) * .06);
+    radial-gradient(closest-side, rgba(255, 236, 228, .1), transparent 45%),
+    radial-gradient(closest-side, rgba(179, 18, 46, .34), rgba(179, 18, 46, .1) 55%, rgba(179, 18, 46, .03) 80%, transparent);
   animation: breathe 9s ease-in-out infinite alternate, glow-in 2.2s var(--ease-out) both;
+}
+/* Brighter layer faded in by hero-reel.js when the reel spins or a frame is hovered. */
+.hero-glow-boost {
+  background:
+    radial-gradient(closest-side, rgba(255, 236, 228, .08), transparent 45%),
+    radial-gradient(closest-side, rgba(179, 18, 46, .26), rgba(179, 18, 46, .06) 60%, transparent);
+  opacity: 0;
+  scale: 1.04;
 }
 @keyframes breathe { to { transform: translate(2%, -3%) scale(1.06); } }
 @keyframes glow-in { from { opacity: 0; } }
