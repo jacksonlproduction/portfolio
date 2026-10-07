@@ -69,7 +69,7 @@
     b.type = 'button';
     b.dataset.cursor = 'link';
     const t = document.createElement('b'); t.textContent = p.title;
-    const k = document.createElement('i'); k.textContent = meta(p, ['kind', 'year']);
+    const k = document.createElement('i'); k.textContent = meta(p, ['client', 'kind', 'year']);
     b.append(t, k);
     b.addEventListener('click', () => { dismissHint(); window.Lightbox.open(i); });
     li.append(b);
@@ -88,7 +88,7 @@
     shown = i;
     nsIndex.textContent = pad2(P[i]._i + 1);
     nsTitle.textContent = P[i].title;
-    nsKind.textContent = P[i].kind;
+    nsKind.textContent = meta(P[i], ['client', 'kind']);
     ns.classList.remove('swap'); void ns.offsetWidth; ns.classList.add('swap');
   }
   setNow(0);
@@ -332,7 +332,7 @@
     fit.lines.forEach((ln, k) => g.fillText(ln, 26, base - (fit.lines.length - 1 - k) * lh));
     g.font = 'italic 400 27px "Apple Garamond", Garamond, serif';
     g.fillStyle = 'rgba(255,255,255,.78)';
-    g.fillText(meta(p, ['kind', 'year']), 28, H - 34);
+    g.fillText(meta(p, ['client', 'kind', 'year']), 28, H - 34);
   }
 
   // Composite one frame of "footage": background, drifting light leak, grain, then text on top.

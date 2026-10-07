@@ -63,7 +63,7 @@
     meta.innerHTML = '<h3 class="card-title"></h3><p class="card-year"></p><p class="card-kind"></p>';
     meta.querySelector('.card-title').textContent = p.title;
     meta.querySelector('.card-year').textContent = p.year || '';
-    meta.querySelector('.card-kind').textContent = p.kind;
+    meta.querySelector('.card-kind').textContent = window.projectMeta ? window.projectMeta(p, ['client', 'kind']) : p.kind;
 
     // if a thumbnail can't load, hide it and let the tinted backdrop show instead of a broken image
     media.querySelectorAll('img').forEach(im => im.addEventListener('error', () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; }));
@@ -137,6 +137,7 @@
     return b;
   });
   if (count) count.textContent = P.length;
+  if (kinds.length < 2) filters.hidden = true;   // nothing to filter yet
 
   let current = 'all';
   function setFilter(k) {

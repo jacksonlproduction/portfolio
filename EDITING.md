@@ -7,7 +7,8 @@ Everything that's placeholder lives in a few small files. You never need to touc
 
 | Field | What to put |
 | --- | --- |
-| `title`, `kind` | Shown on the reel frames, cards and player. `kind` also creates the filter chips. |
+| `title`, `kind` | Shown on the reel frames, cards and player. `kind` also creates the filter chips (they appear once there are two or more kinds). |
+| `client` | Optional. Who it was for, shown next to the kind, e.g. "Carlsbad High Football · Hype edit". |
 | `year`, `length` | Optional. Leave them `''` and they're hidden. |
 | `youtube` | The video ID from the link: `youtube.com/watch?v=`**`ID`**, `youtu.be/`**`ID`** or `youtube.com/shorts/`**`ID`**. Clicking plays it, and the YouTube thumbnail is used automatically. |
 | `vertical` | `true` for Shorts / 9:16 videos — they get a phone-shaped frame and a tall player. |
