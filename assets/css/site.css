@@ -272,6 +272,10 @@ button { font: inherit; color: inherit; }
 }
 .spin-hint.show .sh-inner { animation: hint-pop .9s cubic-bezier(.34, 1.56, .64, 1) forwards, hint-bob 3.2s ease-in-out .9s infinite; }
 .spin-hint.hide .sh-inner { opacity: 1; filter: none; transform: none; animation: hint-sink .55s var(--ease-out) forwards; }
+/* Between appearances it just melts away; comebacks are fainter so it never nags */
+.spin-hint.rest .sh-inner { opacity: 1; filter: none; transform: none; animation: hint-melt .9s var(--ease-out) forwards; }
+@keyframes hint-melt { to { opacity: 0; transform: translateY(10px); filter: blur(6px); } }
+.spin-hint.again { opacity: calc(.68 - var(--out, 0) * 2.5); }
 @keyframes hint-pop { to { opacity: 1; transform: none; filter: blur(0); } }
 @keyframes hint-bob { 0%, 100% { opacity: 1; transform: translateY(0); filter: blur(0); } 50% { opacity: 1; transform: translateY(-6px); filter: blur(0); } }
 @keyframes hint-sink { to { opacity: 0; transform: translateY(40px) scale(.6); filter: blur(8px); } }
@@ -793,11 +797,11 @@ body::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .hero-glow, .lb-backdrop, .spin-hint.show .sh-inner, .spin-hint.hide .sh-inner, .lb-panel, .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: none; }
+  .reveal, .hero-glow, .lb-backdrop, .spin-hint.show .sh-inner, .spin-hint.hide .sh-inner, .spin-hint.rest .sh-inner, .lb-panel, .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: none; }
   .scribble svg { animation: none; clip-path: none; }
   .spin-hint.show .sh-arrow path { animation: none; stroke-dashoffset: 0; }
   .spin-hint.show .sh-inner { opacity: 1; transform: none; filter: none; }
-  .spin-hint.hide .sh-inner { opacity: 0; }
+  .spin-hint.hide .sh-inner, .spin-hint.rest .sh-inner { opacity: 0; }
   .js .rv { opacity: 1; transform: none; filter: none; transition: none; }
   .card.playing .card-leak, .card.playing .card-progress i { animation: none; }
 }

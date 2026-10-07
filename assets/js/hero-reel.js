@@ -17,15 +17,37 @@
   const pad2 = n => String(n).padStart(2, '0');
   const mod = (a, n) => ((a % n) + n) % n;
 
-  /* ───────── "Spin me" hint, shown once until the first interaction ───────── */
+  /* ───────── "Spin me" hint ─────────
+     Shows a few seconds after load, fades after a while, and drifts back (fainter, with longer gaps)
+     while nobody has touched the reel. Any reel interaction or scrolling the page retires it for good. */
   const hint = document.getElementById('spin-hint');
-  let hintState = hint ? 'waiting' : 'gone', hintGoneAt = 0, wiggleStart = 0;
-  const hintShowAt = performance.now() + (reduce ? 400 : 2300);
+  const HINT_ON = 5000;                     // how long each appearance stays
+  const HINT_GAPS = [9000, 15000, 24000];   // rests before each comeback; then it stops for good
+  let hintState = hint ? 'waiting' : 'gone', hintGoneAt = 0, wiggleStart = 0, hintRound = 0;
+  let hintNextAt = performance.now() + (reduce ? 400 : 2300);
+  function showHint(nowMs) {
+    hintState = 'shown';
+    hintNextAt = nowMs + HINT_ON;
+    hint.classList.remove('show', 'rest', 'hide');
+    void hint.offsetWidth;                  // restart the pop-in animation
+    hint.classList.toggle('again', hintRound > 0);
+    hint.classList.add('show');
+    wiggleStart = nowMs;
+  }
+  function restHint(nowMs) {
+    hintState = 'resting';
+    hintGoneAt = nowMs;
+    hint.classList.remove('show');
+    hint.classList.add('rest');
+    hintNextAt = hintRound < HINT_GAPS.length ? nowMs + HINT_GAPS[hintRound++] : Infinity;
+  }
   function dismissHint() {
     if (hintState === 'gone') return;
+    const wasShown = hintState === 'shown';
     hintState = 'gone';
-    hintGoneAt = performance.now();
     wiggleStart = 0;
+    if (!wasShown) return;
+    hintGoneAt = performance.now();
     hint.classList.remove('show');
     hint.classList.add('hide');
   }
@@ -404,7 +426,7 @@
 
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
-    dismissHint();
+    if (e.pointerType === 'mouse') dismissHint();   // on touch, wait to see if it's a drag/tap or a page scroll
     pressed = hovered;   // remember which frame was under the pointer when the press started
     dragging = true; moved = 0; vel = 0; carry = 0;
     dragAngle = angle;
@@ -424,6 +446,7 @@
       moved = Math.abs(e.clientX - startX);
       if (moved < TOUCH_SLOP) return;
       engaged = true;
+      dismissHint();
       lastX = e.clientX;
     }
     const dx = e.clientX - lastX;
@@ -443,7 +466,7 @@
     carry = dragAngle - angle;   // finish the bit of drag the eased reel hadn't caught up to yet
     // pointercancel means the browser took over (usually a vertical page scroll): stop where we are.
     if (e.type === 'pointercancel' || performance.now() - lastMoveT > 90) vel = 0;
-    if (moved < 6 && e.type === 'pointerup' && pressed >= 0) { vel = 0; goTo(pressed, true); return; }
+    if (moved < 6 && e.type === 'pointerup' && pressed >= 0) { dismissHint(); vel = 0; goTo(pressed, true); return; }
     if (Math.abs(vel) < 0.002) { vel = 0; target = snap(angle + carry); }
   };
   canvas.addEventListener('pointerup', endDrag);
@@ -490,16 +513,12 @@
       lastInteract = nowMs;
     }
     // "spin me" hint: pops up from inside the ring and the reel gives a little wiggle
-    if (hintState === 'waiting' && nowMs >= hintShowAt) {
-      hintState = 'shown';
-      hint.classList.add('show');
-      wiggleStart = nowMs;
-    }
-    if (hintState === 'shown' && !reduce && nowMs - wiggleStart > 6500) wiggleStart = nowMs;
+    if ((hintState === 'waiting' || hintState === 'resting') && nowMs >= hintNextAt && !lbOpen) showHint(nowMs);
+    else if (hintState === 'shown' && nowMs >= hintNextAt) restHint(nowMs);
     const wt = nowMs - wiggleStart;
     const nudge = wiggleStart && !reduce && wt < 1800 ? Math.sin(wt / 1000 * 10) * 0.075 * Math.exp(-wt / 520) : 0;
     spin.rotation.y = angle + nudge;
-    if (hintState !== 'gone' || nowMs - hintGoneAt < 900) {
+    if (hintState === 'shown' || nowMs - hintGoneAt < 900) {
       tilt.updateMatrixWorld(true);
       hintPos.set(0, 0.28, 0);
       spin.localToWorld(hintPos);
@@ -579,6 +598,7 @@
     const h = hero.offsetHeight || innerHeight;
     const p = Math.min(1, Math.max(0, -hero.getBoundingClientRect().top / h));
     hero.style.setProperty('--out', p.toFixed(3));
+    if (p > 0.04) dismissHint();   // once they've scrolled on, the hint has done its job
   }
   addEventListener('scroll', () => { if (!outRaf) outRaf = requestAnimationFrame(onScroll); }, { passive: true });
   onScroll();
