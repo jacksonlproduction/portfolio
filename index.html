@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,11 +9,25 @@
   <link rel="preload" href="fonts/poppins-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/aston-script.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/akira-expanded-800.woff2" as="font" type="font/woff2" crossorigin>
+  <script>document.documentElement.classList.replace('no-js', 'js')</script>
   <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/site.css">
   <link rel="stylesheet" href="assets/css/cursor.css">
 </head>
 <body>
+
+  <header class="site-nav" id="site-nav">
+    <nav class="nav" aria-label="Main">
+      <a class="nav-logo" href="#top" data-cursor="link">Jackson Luria</a>
+      <ul class="nav-links">
+        <li><a href="#work" data-cursor="link" data-magnet>Work</a></li>
+        <li><a href="#gear" data-cursor="link" data-magnet>Gear</a></li>
+        <li><a href="#about" data-cursor="link" data-magnet>About</a></li>
+      </ul>
+      <a class="nav-cta" href="#contact" data-cursor="link" data-magnet><span class="dot" aria-hidden="true"></span>Let's talk</a>
+    </nav>
+  </header>
+
 
   <!-- ═════════ HERO: 3D film reel ═════════ -->
   <header class="hero" id="top" data-dark>
@@ -27,15 +41,6 @@
     </div>
     <canvas class="hero-reel" id="reel" tabindex="0" aria-label="Film reel of projects. Drag or use the arrow keys to spin, press Enter to watch the front project." data-cursor="drag" data-label="Drag" data-cursor-float></canvas>
 
-    <nav class="nav" aria-label="Main">
-      <a class="nav-logo" href="#top" data-cursor="link">Jackson Luria</a>
-      <ul class="nav-links">
-        <li><a href="#work" data-cursor="link" data-magnet>Work</a></li>
-        <li><a href="#gear" data-cursor="link" data-magnet>Gear</a></li>
-        <li><a href="#about" data-cursor="link" data-magnet>About</a></li>
-      </ul>
-      <a class="nav-cta" href="#contact" data-cursor="link" data-magnet><span class="dot" aria-hidden="true"></span>Let's talk</a>
-    </nav>
 
     <div class="hero-copy">
       <p class="hero-eyebrow reveal" style="--d:.15s">Videographer &amp; editor</p>
@@ -59,11 +64,26 @@
     <ul class="reel-fallback" id="reel-list"></ul>
   </header>
 
-  <!-- ═════════ Placeholder for the next sections ═════════ -->
-  <main id="work" class="next-up">
-    <p class="next-eyebrow">Coming next</p>
-    <h2 class="next-title">Selected <em>work</em></h2>
-    <p class="next-copy">The work carousel, gear camera, scrapbook About and contact form get built here next.</p>
+  <!-- ═════════ SELECTED WORK ═════════ -->
+  <main class="sheet">
+    <section class="work" id="work" aria-labelledby="work-title">
+      <div class="work-head">
+        <div class="work-heading rv">
+          <p class="eyebrow">Selected work</p>
+          <h2 class="work-title" id="work-title">Selected <em>work</em><sup id="work-count">10</sup></h2>
+        </div>
+        <p class="work-intro rv" style="--rd:.1s">Hype edits, short docs, social and drone. Hover a piece to preview it, click to watch the whole thing.</p>
+      </div>
+
+      <div class="work-filters rv" style="--rd:.15s" role="group" aria-label="Filter projects" id="work-filters"></div>
+
+      <ol class="work-grid" id="work-grid"></ol>
+
+      <div class="work-more rv">
+        <p>More on <span class="scribble">YouTube<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M1 6 C 20 2, 45 9, 62 5 S 90 3, 99 6"/></svg></span> and Instagram.</p>
+        <a class="pill" href="https://www.instagram.com/jacksonluria" target="_blank" rel="noopener" data-cursor="link" data-magnet>@jacksonluria</a>
+      </div>
+    </section>
   </main>
 
   <!-- ═════════ Project lightbox ═════════ -->
@@ -83,7 +103,11 @@
 
   <script src="assets/vendor/three-0.149.0.min.js"></script>
   <script src="assets/js/projects.js"></script>
+  <script src="assets/js/lightbox.js"></script>
   <script src="assets/js/hero-reel.js"></script>
+  <script src="assets/js/work.js"></script>
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/reveal.js"></script>
   <script src="assets/js/cursor.js"></script>
 </body>
 </html>

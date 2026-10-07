@@ -24,55 +24,14 @@
     hint.classList.add('hide');
   }
 
-  /* ───────── Lightbox ───────── */
-  const lb = document.getElementById('lightbox');
-  const lbVideo = document.getElementById('lb-video');
-  const lbTitle = document.getElementById('lb-title');
-  const lbKind = document.getElementById('lb-kind');
-  let lbOpen = false, lastFocus = null;
-
-  function openProject(i) {
-    dismissHint();
-    const p = P[i];
-    lbTitle.textContent = p.title;
-    lbKind.textContent = `${p.kind} · ${p.year} · ${p.length}`;
-    lbVideo.replaceChildren();
-    if (p.youtube) {
-      const f = document.createElement('iframe');
-      f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(p.youtube)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
-      f.title = p.title;
-      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-      f.allowFullscreen = true;
-      lbVideo.append(f);
-    } else {
-      const ph = document.createElement('div');
-      ph.className = 'lb-placeholder';
-      ph.style.background = `linear-gradient(135deg, ${p.tint[0]}, ${p.tint[1]})`;
-      const s = document.createElement('span');
-      s.textContent = 'Video placeholder. Add the YouTube ID in projects.js.';
-      ph.append(s);
-      lbVideo.append(ph);
-    }
-    lastFocus = document.activeElement;
-    lb.hidden = false;
-    lbOpen = true;
-    document.documentElement.style.overflow = 'hidden';
-    lb.querySelector('.lb-close').focus({ preventScroll: true });
-    dispatchEvent(new Event('cursor:refresh'));
+  /* ───────── Lightbox (lives in lightbox.js, shared with the work grid) ───────── */
+  let lbOpen = false;
+  const openProject = i => { dismissHint(); window.Lightbox.open(i); };
+  addEventListener('lightbox:change', e => {
+    lbOpen = e.detail.open;
+    if (lbOpen) dismissHint();
     if (typeof syncRunning === 'function') syncRunning();
-  }
-  function closeProject() {
-    if (!lbOpen) return;
-    lb.hidden = true;
-    lbVideo.replaceChildren();
-    lbOpen = false;
-    document.documentElement.style.overflow = '';
-    if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
-    dispatchEvent(new Event('cursor:refresh'));
-    if (typeof syncRunning === 'function') syncRunning();
-  }
-  lb.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeProject(); });
-  addEventListener('keydown', e => { if (e.key === 'Escape') closeProject(); });
+  });
 
   /* ───────── Accessible list (and fallback when WebGL is missing) ───────── */
   const list = document.getElementById('reel-list');
@@ -589,9 +548,26 @@
     else cancelAnimationFrame(raf);
   }
   // The reel pauses while offscreen, while the tab is hidden, and while a project is open on top of it.
-  var syncRunning = () => setRunning(onScreen && !document.hidden && !lbOpen);
+  // Also pauses once the white work section has slid all the way over the (sticky) hero.
+  var syncRunning = () => setRunning(onScreen && !covered && !document.hidden && !lbOpen);
   raf = requestAnimationFrame(frame);
   let onScreen = true;
   new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; syncRunning(); }).observe(hero);
+
+  // As the next section slides up over the hero, dim the hero a little (it stays put underneath).
+  const sheet = hero.nextElementSibling;
+  let covered = false, coverRaf = 0;
+  function onScroll() {
+    coverRaf = 0;
+    if (!sheet) return;
+    const top = sheet.getBoundingClientRect().top;
+    const h = hero.offsetHeight || innerHeight;
+    const p = Math.min(1, Math.max(0, 1 - top / h));
+    hero.style.setProperty('--cover', p.toFixed(3));
+    const nowCovered = top <= 0;
+    if (nowCovered !== covered) { covered = nowCovered; syncRunning(); }
+  }
+  addEventListener('scroll', () => { if (!coverRaf) coverRaf = requestAnimationFrame(onScroll); }, { passive: true });
+  onScroll();
   document.addEventListener('visibilitychange', syncRunning);
 })();
