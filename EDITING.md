@@ -16,7 +16,8 @@ Everything that's placeholder lives in a few small files. You never need to touc
 Order in the file = order on the reel and in the grid.
 
 ## Gear
-`assets/js/gear-data.js` — swap `model`, `note` and `specs` for your real kit. The `kit` list at the bottom is the full gear list under the drawing.
+`assets/js/gear-data.js` — the four devices shown in 3D (Lumix S5, Lumix S9, Blackmagic Pocket 6K Pro, DJI Mavic 3 Pro): notes, specs, hotspot text, the S9 colour swatches, and the kit list below the viewer. Edit the `note` lines to say how you actually use each one.
+The 3D models themselves are built in `assets/js/gear3d.js` (one `build…` function per device).
 
 ## About (scrapbook + bio)
 In `index.html`, search for `ABOUT (scrapbook)`.

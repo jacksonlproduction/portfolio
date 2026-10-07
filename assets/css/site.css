@@ -470,6 +470,12 @@ button { font: inherit; color: inherit; }
 .gear-intro { margin: 0; max-width: 38ch; color: var(--ink-2); font-weight: 300; font-size: 16px; }
 .gear-tabs { display: flex; gap: 8px; }
 @media (max-width: 760px) {
+  .gear-side { justify-items: stretch; min-width: 0; }
+  .gear-tabs { overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); }
+  .gear-tabs::-webkit-scrollbar { display: none; }
+  .gear-tabs .chip { flex: 0 0 auto; }
+}
+@media (max-width: 760px) {
   .gear-head { grid-template-columns: minmax(0, 1fr); }
   .gear-side { justify-items: start; text-align: left; }
 }
@@ -477,29 +483,41 @@ button { font: inherit; color: inherit; }
 .gear-stage { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
 @media (max-width: 900px) { .gear-stage { grid-template-columns: minmax(0, 1fr); } }
 
-.gear-figure { position: relative; margin: 0; display: grid; }
-.gear-figure .scene { grid-area: 1 / 1; width: 100%; height: auto; display: block; overflow: visible; transition: opacity .6s var(--ease-out), visibility .6s; }
-.gear-figure .scene:not(.active) { opacity: 0; visibility: hidden; }
-.gear-hotspots { position: absolute; left: 0; top: 0; width: 100%; aspect-ratio: 1000 / 600; pointer-events: none; }
-.gear-caption { margin-top: 6px; font-family: var(--f-serif); font-style: italic; font-size: 15px; color: var(--ink-2); }
+/* 3D viewer */
+.g3d {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  max-width: 100%;
+  border-radius: 24px;
+  background: radial-gradient(60% 55% at 50% 52%, #f6f5f5 0%, #ffffff 70%);
+  overflow: hidden;
+  isolation: isolate;
+}
+.g3d-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: pan-y; outline: none; }
+.g3d-canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--crimson); border-radius: 24px; }
+.g3d-spots { position: absolute; inset: 0; pointer-events: none; }
+.g3d .hs { left: 0; top: 0; opacity: 0; transition: opacity .35s; }
+.g3d-tools { position: absolute; left: 16px; bottom: 14px; display: flex; align-items: center; gap: 12px; z-index: 2; }
+.g3d-swatches { display: flex; align-items: center; gap: 8px; }
+.g3d-swatches[hidden], .g3d-takeoff[hidden] { display: none; }
+.swatch {
+  width: 22px; height: 22px; border-radius: 50%; padding: 0; cursor: pointer;
+  background: var(--c); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--hair);
+  transition: box-shadow .3s, transform .3s var(--ease-out);
+}
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 1.5px var(--ink); transform: scale(1.12); }
+#g3d-swatch-name { font-family: var(--f-serif); font-style: italic; font-size: 16px; color: var(--ink-2); margin-left: 4px; }
+.g3d-takeoff {
+  border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+  background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 500; letter-spacing: -.01em;
+}
+.g3d-takeoff[aria-pressed="true"] { background: var(--crimson); }
+.g3d-hint { position: absolute; right: 18px; bottom: 16px; margin: 0; z-index: 2; font-family: var(--f-serif); font-style: italic; font-size: 15px; color: var(--ink-2); pointer-events: none; }
+@media (max-width: 600px) { .g3d { aspect-ratio: 1 / 1.05; } .g3d-hint { display: none; } }
+.g3d.no-webgl { display: none; }
 
-/* Line drawing */
-.scene .ln { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
-.scene .thin { stroke-width: 1; }
-.scene .ground { stroke: var(--hair); stroke-width: 1; }
-.scene .teeth { fill: none; stroke-width: 5; stroke-dasharray: .012 .012 !important; stroke-dashoffset: 0 !important; }
-.scene .part { transition: opacity .45s var(--ease-out); }
-.scene.hl-on .part { opacity: .14; }
-.scene.hl-on .part.hl { opacity: 1; }
-.scene .part.sel .ln { stroke-width: 2.3; }
-.scene .part.sel .thin { stroke-width: 1.3; }
-/* lines draw themselves in the first time the drawing scrolls into view */
-.js .scene .ln { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.js .scene.drawn .ln { stroke-dashoffset: 0; transition: stroke-dashoffset 1.8s var(--ease-out) calc(var(--i, 0) * .12s), stroke-width .3s; }
-/* drone props spin while the drone drawing is showing */
-.scene .prop ellipse { fill: rgba(11, 11, 11, .04); }
-.scene[data-scene="drone"].active.drawn .prop { animation: prop-spin .42s linear infinite; }
-@keyframes prop-spin { to { transform: rotate(calc(360deg * var(--dir, 1))); } }
+.gd-part { margin: 2px 0 0; padding-left: 12px; border-left: 2px solid var(--crimson); font-size: 14px; color: var(--ink-2); max-width: 42ch; }
+.gd-part b { color: var(--ink); font-weight: 600; }
 
 /* Hotspots */
 .hs {
@@ -509,8 +527,6 @@ button { font: inherit; color: inherit; }
   display: grid; place-items: center;
   opacity: 0; transition: opacity .5s var(--ease-out);
 }
-.gear-figure.ready .hs { opacity: 1; }
-.hs:not(.on-scene) { visibility: hidden; opacity: 0 !important; }
 .hs i {
   position: relative; width: 11px; height: 11px; border-radius: 50%;
   background: var(--crimson); box-shadow: 0 0 0 3px var(--paper);
@@ -812,8 +828,6 @@ button { font: inherit; color: inherit; }
   .spin-hint.hide .sh-inner { opacity: 0; }
   .js .rv { opacity: 1; transform: none; filter: none; transition: none; }
   .card.playing .card-leak, .card.playing .card-progress i { animation: none; }
-  .js .scene .ln { stroke-dashoffset: 0; transition: none; }
-  .scene .prop { animation: none !important; }
   .hs i::before { animation: none; }
 }
 

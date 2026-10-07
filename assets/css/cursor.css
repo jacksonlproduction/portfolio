@@ -52,3 +52,6 @@
 #cur.on-dark.locked.s-play .hl, #cur.on-dark.locked.s-drag .hl { background: transparent; box-shadow: inset 0 0 0 1.5px #fff; }
 
 [data-magnet] { transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
+
+/* Label-only cursor over big light canvases (the 3D gear viewer): dark pill so it reads on white. */
+#cur.float:not(.on-dark) .tag { background: var(--cursor-ink); color: #fff; }
