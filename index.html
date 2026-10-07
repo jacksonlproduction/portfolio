@@ -203,6 +203,84 @@
         <a class="pill dark rv" href="#contact" data-cursor="link" data-magnet style="--rd:.25s">Work with me <span aria-hidden="true">&rarr;</span></a>
       </div>
     </section>
+
+    <!-- ═════════ CONTACT + FOOTER ═════════ -->
+    <section class="contact" id="contact" aria-labelledby="contact-title" data-dark>
+      <div class="contact-glow" aria-hidden="true"></div>
+      <div class="contact-inner">
+        <div class="contact-head">
+          <p class="eyebrow rv">Contact</p>
+          <h2 class="contact-title rv" id="contact-title" style="--rd:.05s">Let's make <span class="script">something</span></h2>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-side rv" style="--rd:.1s">
+            <p class="contact-lede">Tell me what you're working on. Games, launches, stories, trips. I usually reply within a day.</p>
+
+            <div class="contact-email">
+              <span class="ce-label">Email</span>
+              <span class="ce-row">
+                <a href="mailto:hello@jacksonluria.com" id="contact-email" data-cursor="link">hello@jacksonluria.com</a>
+                <button type="button" class="ce-copy" id="copy-email" data-cursor="link">Copy</button>
+              </span>
+            </div>
+
+            <ul class="socials">
+              <li><a href="https://www.instagram.com/jacksonluria" target="_blank" rel="noopener" data-cursor="link"><span>Instagram</span><i>@jacksonluria</i><b aria-hidden="true">&nearr;</b></a></li>
+              <li><a href="https://www.tiktok.com/@jacksonluria" target="_blank" rel="noopener" data-cursor="link"><span>TikTok</span><i>@jacksonluria</i><b aria-hidden="true">&nearr;</b></a></li>
+              <li><a href="https://www.youtube.com/@jacksonluria" target="_blank" rel="noopener" data-cursor="link"><span>YouTube</span><i>@jacksonluria</i><b aria-hidden="true">&nearr;</b></a></li>
+            </ul>
+          </div>
+
+          <form class="contact-form rv" id="contact-form" style="--rd:.15s" novalidate>
+            <div class="field-row">
+              <label class="field"><span>Your name</span><input type="text" name="name" id="cf-name" autocomplete="name" required></label>
+              <label class="field"><span>Email</span><input type="email" name="email" id="cf-email" autocomplete="email" required></label>
+            </div>
+
+            <fieldset class="field-chips" id="cf-type">
+              <legend>What are we making?</legend>
+              <label><input type="checkbox" name="type" value="Hype edit"><span data-cursor="link">Hype edit</span></label>
+              <label><input type="checkbox" name="type" value="Short doc"><span data-cursor="link">Short doc</span></label>
+              <label><input type="checkbox" name="type" value="Social"><span data-cursor="link">Social</span></label>
+              <label><input type="checkbox" name="type" value="Drone"><span data-cursor="link">Drone</span></label>
+              <label><input type="checkbox" name="type" value="Event"><span data-cursor="link">Event</span></label>
+              <label><input type="checkbox" name="type" value="Something else"><span data-cursor="link">Something else</span></label>
+            </fieldset>
+
+            <fieldset class="field-chips" id="cf-budget">
+              <legend>Rough budget</legend>
+              <label><input type="radio" name="budget" value="Under $500"><span data-cursor="link">Under $500</span></label>
+              <label><input type="radio" name="budget" value="$500 to $1.5k"><span data-cursor="link">$500–1.5k</span></label>
+              <label><input type="radio" name="budget" value="$1.5k to $5k"><span data-cursor="link">$1.5–5k</span></label>
+              <label><input type="radio" name="budget" value="$5k+"><span data-cursor="link">$5k+</span></label>
+              <label><input type="radio" name="budget" value="Not sure yet"><span data-cursor="link">Not sure yet</span></label>
+            </fieldset>
+
+            <div class="field-row">
+              <label class="field"><span>Shoot date <em>(if you know it)</em></span><input type="text" name="date" id="cf-date" placeholder="e.g. late March"></label>
+              <label class="field"><span>Where</span><input type="text" name="location" id="cf-location" placeholder="City or venue"></label>
+            </div>
+
+            <label class="field"><span>Tell me about it</span><textarea name="message" id="cf-message" rows="4" required></textarea></label>
+
+            <div class="form-foot">
+              <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
+              <button type="submit" class="send" id="cf-send" data-cursor="link" data-magnet><span class="dot" aria-hidden="true"></span><span class="send-label">Send it</span></button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <p class="footer-sign" aria-hidden="true">Jackson Luria</p>
+        <div class="footer-row">
+          <span>&copy; <span id="year">2026</span> Jackson Luria</span>
+          <span class="footer-mid">Videographer &amp; editor · Available for freelance</span>
+          <a href="#top" data-cursor="link">Back to top <span aria-hidden="true">&uarr;</span></a>
+        </div>
+      </footer>
+    </section>
   </main>
 
   <!-- ═════════ Project lightbox ═════════ -->
@@ -228,6 +306,7 @@
   <script src="assets/js/gear-data.js"></script>
   <script src="assets/js/gear.js"></script>
   <script src="assets/js/scrapbook.js"></script>
+  <script src="assets/js/contact.js"></script>
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/reveal.js"></script>
   <script src="assets/js/cursor.js"></script>
