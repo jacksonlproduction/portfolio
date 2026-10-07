@@ -796,6 +796,96 @@ body::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* ═════════ Liquid Glass ═════════
+   Two tints: clear glass over dark/video, frosted glass over white. Each piece gets bright rims,
+   a soft inner glow and a specular sheen that follows the pointer (glass.js sets --gx/--gy).
+   Backdrop blur is only used where there's imagery behind (nav capsule, reel counter, card tags);
+   elsewhere the layered highlights carry the look without the repaint cost. */
+.nav-cta, .nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .ce-copy, .field-chips span,
+.chip, .board-btn, .pill:not(.dark) {
+  position: relative; isolation: isolate;
+}
+.nav-cta::after, .nav-menu::after, .now-showing::after, .card-tag::after, .card-len::after, .lb-close::after,
+.ce-copy::after, .field-chips span::after, .chip::after, .board-btn::after, .pill:not(.dark)::after,
+.site-nav.solid-dark .nav::after, .site-nav.on-light .nav::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
+  background: radial-gradient(140px circle at var(--gx, 28%) var(--gy, -10%), rgba(255, 255, 255, .42), transparent 62%);
+  opacity: .75; transition: opacity .4s;
+}
+:is(.nav-cta, .nav-menu, .lb-close, .ce-copy, .field-chips span, .chip, .board-btn, .pill):hover::after { opacity: 1; }
+
+/* Clear glass (on dark) */
+.nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .ce-copy, .field-chips span,
+.site-nav.solid-dark .nav, .site-nav:not(.on-light) .nav-cta {
+  border: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .04) 48%, rgba(255, 255, 255, .09));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .5),        /* top rim catching the light */
+    inset 0 -1px 0 rgba(255, 255, 255, .14),      /* soft lower rim */
+    inset 0 0 0 1px rgba(255, 255, 255, .12),     /* the glass edge */
+    inset 0 -10px 18px -12px rgba(255, 255, 255, .18),
+    0 10px 30px -14px rgba(0, 0, 0, .7);
+  color: #fff;
+}
+.site-nav:not(.on-light) .nav-cta { color: #fff; }
+
+/* Frosted glass (on white) */
+.chip, .board-btn, .pill:not(.dark), .site-nav.on-light .nav, .site-nav.on-light .nav-cta, .site-nav.on-light .nav-menu {
+  border: 0;
+  background: linear-gradient(165deg, rgba(255, 255, 255, .92), rgba(246, 245, 245, .66) 55%, rgba(255, 255, 255, .85));
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, .06),
+    inset 0 0 0 1px rgba(0, 0, 0, .065),
+    inset 0 -8px 14px -10px rgba(0, 0, 0, .1),
+    0 8px 22px -12px rgba(0, 0, 0, .28);
+}
+.site-nav.on-light .nav-cta, .site-nav.on-light .nav-menu { color: var(--ink); }
+.chip::after, .board-btn::after, .pill:not(.dark)::after, .site-nav.on-light .nav::after, .site-nav.on-light .nav-cta::after, .site-nav.on-light .nav-menu::after {
+  background: radial-gradient(140px circle at var(--gx, 28%) var(--gy, -10%), rgba(255, 255, 255, 1), transparent 62%);
+}
+/* Selected states stay solid so the choice reads instantly */
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 8px 22px -12px rgba(0, 0, 0, .5); }
+.chip[aria-pressed="true"]::after { opacity: .25; }
+.field-chips input:checked + span { background: #fff; color: var(--ink); box-shadow: inset 0 -6px 12px -8px rgba(0, 0, 0, .25), 0 8px 24px -12px rgba(255, 255, 255, .35); }
+
+/* Real blur only where something sits behind the glass */
+.now-showing, .card-tag, .card-len, .site-nav.solid-dark .nav, .site-nav.on-light .nav {
+  -webkit-backdrop-filter: blur(14px) saturate(1.8); backdrop-filter: blur(14px) saturate(1.8);
+}
+
+/* Nav: once you scroll, the bar lifts into a floating glass capsule */
+.site-nav { transition: color .45s, padding .5s var(--ease-out); }
+.site-nav.solid-dark, .site-nav.on-light {
+  background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+.nav { position: relative; isolation: isolate; border-radius: 999px; transition: background .45s, box-shadow .45s, padding .5s var(--ease-out); }
+.site-nav.solid-dark .nav, .site-nav.on-light .nav { padding: 8px 8px 8px 24px; max-width: 1240px; margin-inline: auto; }
+.site-nav.on-light .nav { background: linear-gradient(165deg, rgba(255, 255, 255, .62), rgba(250, 249, 249, .38) 55%, rgba(255, 255, 255, .58)); }
+.site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: clamp(22px, 2.1vw, 27px); }
+@media (max-width: 640px) {
+  .site-nav.solid-dark, .site-nav.on-light { padding-inline: 10px; }
+  .site-nav.solid-dark .nav, .site-nav.on-light .nav { padding: 5px 5px 5px 14px; gap: 8px; }
+  .site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: 21px; padding-inline: 2px; }
+  .site-nav.solid-dark .nav-menu, .site-nav.on-light .nav-menu { width: 40px; height: 40px; }
+  .site-nav.solid-dark .nav-menu span, .site-nav.on-light .nav-menu span { left: 12px; right: 12px; }
+  .site-nav.solid-dark .nav-menu span:first-child, .site-nav.on-light .nav-menu span:first-child { top: 16px; }
+  .site-nav.solid-dark .nav-menu span:last-child, .site-nav.on-light .nav-menu span:last-child { top: 22px; }
+}
+.menu-open .site-nav .nav { background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.menu-open .site-nav .nav::after { display: none; }
+.site-nav.solid-dark .nav { background: linear-gradient(160deg, rgba(40, 40, 40, .55), rgba(10, 10, 10, .45)); }
+
+/* Reel counter: a glass capsule floating over the film */
+.now-showing { padding: 10px 22px 12px; border-radius: 22px; min-width: 190px; }
+/* Card tags: small glass chips over the thumbnails */
+.card-tag, .card-len { padding: 5px 10px; border-radius: 999px; top: 12px; }
+.card-len:empty { display: none; }
+.card-len { right: 12px; }
+.card-tag { left: 12px; }
+.nav-menu { border: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   .reveal, .hero-glow, .lb-backdrop, .spin-hint.show .sh-inner, .spin-hint.hide .sh-inner, .spin-hint.rest .sh-inner, .lb-panel, .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: none; }
   .scribble svg { animation: none; clip-path: none; }
