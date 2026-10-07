@@ -143,10 +143,10 @@ button { font: inherit; color: inherit; }
 }
 .nav-logo {
   font-family: var(--f-script);
-  font-size: clamp(24px, 2.4vw, 30px);
+  font-size: clamp(30px, 2.8vw, 36px);
   line-height: 1;
   text-decoration: none;
-  padding: 6px 6px 2px;
+  padding: 4px 8px 0;
   border-radius: 8px;
 }
 .nav-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
@@ -863,11 +863,11 @@ body::after {
 .nav { position: relative; isolation: isolate; border-radius: 999px; transition: background .45s, box-shadow .45s, padding .5s var(--ease-out); }
 .site-nav.solid-dark .nav, .site-nav.on-light .nav { padding: 8px 8px 8px 24px; max-width: 1240px; margin-inline: auto; }
 .site-nav.on-light .nav { background: linear-gradient(165deg, rgba(255, 255, 255, .62), rgba(250, 249, 249, .38) 55%, rgba(255, 255, 255, .58)); }
-.site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: clamp(22px, 2.1vw, 27px); }
+.site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: clamp(27px, 2.4vw, 31px); }
 @media (max-width: 640px) {
   .site-nav.solid-dark, .site-nav.on-light { padding-inline: 10px; }
   .site-nav.solid-dark .nav, .site-nav.on-light .nav { padding: 5px 5px 5px 14px; gap: 8px; }
-  .site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: 21px; padding-inline: 2px; }
+  .site-nav.solid-dark .nav-logo, .site-nav.on-light .nav-logo { font-size: 27px; padding-inline: 4px; }
   .site-nav.solid-dark .nav-menu, .site-nav.on-light .nav-menu { width: 40px; height: 40px; }
   .site-nav.solid-dark .nav-menu span, .site-nav.on-light .nav-menu span { left: 12px; right: 12px; }
   .site-nav.solid-dark .nav-menu span:first-child, .site-nav.on-light .nav-menu span:first-child { top: 16px; }
