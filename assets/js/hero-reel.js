@@ -548,26 +548,20 @@
     else cancelAnimationFrame(raf);
   }
   // The reel pauses while offscreen, while the tab is hidden, and while a project is open on top of it.
-  // Also pauses once the white work section has slid all the way over the (sticky) hero.
-  var syncRunning = () => setRunning(onScreen && !covered && !document.hidden && !lbOpen);
+  var syncRunning = () => setRunning(onScreen && !document.hidden && !lbOpen);
   raf = requestAnimationFrame(frame);
   let onScreen = true;
   new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; syncRunning(); }).observe(hero);
 
-  // As the next section slides up over the hero, dim the hero a little (it stays put underneath).
-  const sheet = hero.nextElementSibling;
-  let covered = false, coverRaf = 0;
+  // As the hero scrolls out of view, report how far (0..1) so CSS can drift and fade its contents.
+  let outRaf = 0;
   function onScroll() {
-    coverRaf = 0;
-    if (!sheet) return;
-    const top = sheet.getBoundingClientRect().top;
+    outRaf = 0;
     const h = hero.offsetHeight || innerHeight;
-    const p = Math.min(1, Math.max(0, 1 - top / h));
-    hero.style.setProperty('--cover', p.toFixed(3));
-    const nowCovered = top <= 0;
-    if (nowCovered !== covered) { covered = nowCovered; syncRunning(); }
+    const p = Math.min(1, Math.max(0, -hero.getBoundingClientRect().top / h));
+    hero.style.setProperty('--out', p.toFixed(3));
   }
-  addEventListener('scroll', () => { if (!coverRaf) coverRaf = requestAnimationFrame(onScroll); }, { passive: true });
+  addEventListener('scroll', () => { if (!outRaf) outRaf = requestAnimationFrame(onScroll); }, { passive: true });
   onScroll();
   document.addEventListener('visibilitychange', syncRunning);
 })();

@@ -76,13 +76,29 @@
       const b = bounds(el);
       s.dx = rand(Math.max(b.minX, -board.clientWidth * 0.25), Math.min(b.maxX, board.clientWidth * 0.25));
       s.dy = rand(Math.max(b.minY, -board.clientHeight * 0.2), Math.min(b.maxY, board.clientHeight * 0.2));
-      s.r = rand(-12, 12);
+      s.r = rand(-9, 9);
       el.style.zIndex = ++z;
       el.classList.add('settling');
       el.style.transitionDelay = reduce ? '0s' : `${k * 0.04}s`;
       apply(el);
     });
     setTimeout(() => snaps.forEach(el => { el.style.transitionDelay = ''; el.classList.remove('settling'); }), 1400);
+  });
+
+  // Tidy up: everything glides back to its original spot and angle.
+  const home = new Map(snaps.map(el => [el, state.get(el).r]));
+  document.getElementById('board-tidy')?.addEventListener('click', () => {
+    snaps.forEach((el, k) => {
+      const s = state.get(el);
+      s.dx = 0; s.dy = 0; s.r = home.get(el);
+      el.style.zIndex = 10 + k;
+      el.classList.add('settling');
+      el.style.transitionDelay = reduce ? '0s' : `${k * 0.03}s`;
+      apply(el);
+    });
+    z = 10 + snaps.length;
+    board.classList.remove('touched');
+    setTimeout(() => snaps.forEach(el => { el.style.transitionDelay = ''; el.classList.remove('settling'); }), 1300);
   });
 
   // Keep pieces on the table if the window size changes.

@@ -47,10 +47,9 @@ button { font: inherit; color: inherit; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } }
 
 /* ═════════ HERO ═════════ */
-/* The hero stays put (sticky) while the white sheet below slides up over it. */
+/* The hero scrolls away normally; as it leaves, its contents drift and fade (see --out in hero-reel.js). */
 .hero {
-  position: sticky;
-  top: 0;
+  position: relative;
   height: 100svh;
   min-height: 640px;
   max-height: 1100px;
@@ -92,15 +91,11 @@ button { font: inherit; color: inherit; }
 @keyframes breathe { to { transform: translate(2%, -3%) scale(1.06); } }
 @keyframes glow-in { from { opacity: 0; } }
 
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  background: #000;
-  opacity: calc(var(--cover, 0) * .55);
-  pointer-events: none;
-}
+/* Scroll-out transition: the reel sinks a little slower than the page and the copy lifts away. */
+.hero-reel { transform: translate3d(0, calc(var(--out, 0) * 90px), 0); opacity: calc(1 - var(--out, 0) * .85); }
+.hero-copy { transform: translate3d(0, calc(var(--out, 0) * -50px), 0); opacity: calc(1 - var(--out, 0) * 1.4); filter: blur(calc(var(--out, 0) * 6px)); }
+.hero-foot { opacity: calc(1 - var(--out, 0) * 2); }
+.hero-glow { opacity: calc(1 - var(--out, 0) * .7); }
 
 .hero-reel {
   position: absolute;
@@ -266,7 +261,7 @@ button { font: inherit; color: inherit; }
 }
 
 /* "spin me" — positioned by hero-reel.js at the centre of the ring */
-.spin-hint { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; will-change: transform; }
+.spin-hint { position: absolute; left: 0; top: 0; z-index: 1; pointer-events: none; will-change: transform; opacity: calc(1 - var(--out, 0) * 2.5); }
 .sh-inner {
   translate: -50% -50%;
   display: grid; justify-items: center; gap: 0;
@@ -327,14 +322,7 @@ button { font: inherit; color: inherit; }
 .rv.in .scribble path { animation-play-state: running; animation-delay: .5s; }
 
 /* ═════════ The white sheet that slides over the hero ═════════ */
-.sheet {
-  position: relative;
-  z-index: 2;
-  margin-top: -28px;
-  background: var(--paper);
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -24px 60px rgba(0, 0, 0, .35);
-}
+.sheet { position: relative; background: var(--paper); }
 
 /* ═════════ SELECTED WORK ═════════ */
 .work {
@@ -588,6 +576,7 @@ button { font: inherit; color: inherit; }
 
 .about-board {
   position: relative;
+  margin-bottom: 52px; /* room for the buttons */
   aspect-ratio: 1 / 1.02;
   max-width: 100%;
   border-radius: 22px;
@@ -611,7 +600,7 @@ button { font: inherit; color: inherit; }
 
 .polaroid {
   background: var(--paper);
-  padding: 5.5% 5.5% 0;
+  padding: 3% 3% 0; /* thin border so the photo does the talking */
   box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 30px -14px rgba(0, 0, 0, .35);
 }
 .snap.dragging.polaroid, .snap.dragging.ticket { box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 30px 50px -18px rgba(0, 0, 0, .45); }
@@ -627,8 +616,8 @@ button { font: inherit; color: inherit; }
 }
 .ph-label { position: absolute; left: 8%; top: 7%; font-size: 9px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: rgba(255, 255, 255, .55); }
 .polaroid figcaption {
-  font-family: var(--f-script); font-size: clamp(13px, 3.3cqi, 22px); line-height: 1.1;
-  text-align: center; padding: 9% 4% 10%; color: var(--ink);
+  font-family: var(--f-script); font-size: clamp(12px, 2.7cqi, 18px); line-height: 1.1;
+  text-align: center; padding: 5% 4% 6%; color: var(--ink);
 }
 .tape {
   position: absolute; z-index: 1; top: -3.5%; left: 50%; width: 42%; height: 9%;
@@ -650,10 +639,10 @@ button { font: inherit; color: inherit; }
 .t-main i { font-family: var(--f-serif); font-size: clamp(15px, 3.8cqi, 26px); line-height: 1.05; letter-spacing: -.02em; }
 .t-main small { font-size: clamp(6px, 1.45cqi, 10px); color: var(--ink-2); letter-spacing: .02em; }
 .t-stub {
-  display: grid; align-content: center; justify-items: center; padding: 0 14% 0 12%;
+  display: grid; align-content: center; justify-items: center; padding: 0 26% 0 14%; /* clear of the notch */
   border-left: 1.5px dashed var(--ink); font-size: clamp(6px, 1.4cqi, 9px); text-transform: uppercase; letter-spacing: .14em; text-align: center; color: var(--ink-2);
 }
-.t-stub b { font-family: var(--f-tall); font-weight: 400; font-size: clamp(16px, 4.4cqi, 30px); letter-spacing: 0; color: var(--ink); line-height: 1; }
+.t-stub b { font-family: var(--f-tall); font-weight: 400; font-size: clamp(14px, 3.4cqi, 24px); letter-spacing: 0; color: var(--ink); line-height: 1; }
 
 .stamp svg, .canister svg { display: block; width: 100%; height: auto; }
 .stamp { opacity: .9; }
@@ -666,10 +655,10 @@ button { font: inherit; color: inherit; }
 .cn-text { font-family: var(--f-wide); font-weight: 800; font-size: 9px; fill: var(--ink); }
 
 .note {
-  margin: 0; padding: 8% 8% 10%;
+  margin: 0; padding: 7% 9% 6%;
   background: var(--paper) repeating-linear-gradient(transparent 0 1.55em, #ece8e8 1.55em calc(1.55em + 1px));
   box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .35);
-  font-family: var(--f-script); font-size: clamp(15px, 3.3cqi, 24px); line-height: 1.55em; color: var(--ink);
+  font-family: var(--f-script); font-size: clamp(13px, 2.7cqi, 19px); line-height: 1.55em; color: var(--ink);
 }
 
 .board-doodles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 900; overflow: visible; }
@@ -678,8 +667,8 @@ button { font: inherit; color: inherit; }
   position: absolute; left: var(--x); top: var(--y); margin: 0; z-index: 900; pointer-events: none;
   font-family: var(--f-script); font-size: clamp(14px, 3.4cqi, 22px); color: var(--crimson); rotate: -8deg;
 }
-.board-shuffle {
-  position: absolute; right: 0; bottom: -8px; z-index: 950;
+.board-actions { position: absolute; right: 0; bottom: -52px; z-index: 950; display: flex; gap: 8px; }
+.board-btn {
   border: 1px solid var(--hair); background: var(--paper); border-radius: 999px;
   padding: 9px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
 }
