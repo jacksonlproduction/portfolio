@@ -100,18 +100,19 @@
   renderer.setClearColor(0x000000, 0);
 
   const scene = new T.Scene();
-  const camera = new T.PerspectiveCamera(26, 1, 0.1, 60);
+  const camera = new T.PerspectiveCamera(26, 1, 0.5, 20);
 
   // Studio environment: a grey room with softboxes, pre-blurred for reflections.
   {
     const env = new T.Scene();
-    const room = new T.Mesh(new T.BoxGeometry(12, 8, 12), new T.MeshBasicMaterial({ color: 0x0c0c0d, side: T.BackSide }));
+    const room = new T.Mesh(new T.BoxGeometry(12, 8, 12), new T.MeshBasicMaterial({ color: 0x232325, side: T.BackSide }));
     env.add(room);
     const box = (w, h, x, y, z, ry, rx, c) => {
       const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: c, side: T.DoubleSide }));
       m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, 0); env.add(m);
     };
     box(5, 2.2, 0, 3.9, 0.5, 0, Math.PI / 2, new T.Color(3.2, 3.2, 3.2)); // overhead
+    box(11, 11, 0, -3.95, 0, 0, -Math.PI / 2, new T.Color(0.62, 0.62, 0.62)); // white sweep floor: bounce light from below
     box(1.2, 4.5, -5.9, 0.6, 1, Math.PI / 2, 0, new T.Color(2.6, 2.6, 2.6)); // left strip
     box(0.9, 4.5, 5.9, 0.6, -1, -Math.PI / 2, 0, new T.Color(1.6, 1.6, 1.6)); // right strip
     box(3, 0.8, 1.5, -2.2, 5.9, Math.PI, 0, new T.Color(0.45, 0.45, 0.45)); // low front fill
@@ -124,17 +125,49 @@
   }
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
-  const key = new T.DirectionalLight(0xffffff, 0.75);
+  const key = new T.DirectionalLight(0xffffff, 1.0);
   key.position.set(2.5, 6, 3.5);
   key.castShadow = true;
   key.shadow.mapSize.set(2048, 2048);
   key.shadow.radius = 6;
   key.shadow.bias = -0.0004;
   Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 1, far: 14 });
-  scene.add(key, new T.AmbientLight(0xffffff, 0.08));
+  scene.add(key);
   const catcher = new T.Mesh(new T.PlaneGeometry(8, 8), new T.ShadowMaterial({ opacity: 0.18 }));
   catcher.rotation.x = -Math.PI / 2; catcher.receiveShadow = true;
   scene.add(catcher);
+
+  /* ───────── Ambient occlusion (darkens crevices and contact points, like a real photo) ───────── */
+  // Rendered through a composer: SSAO pass (draws the scene + AO), then a final pass for ACES tone + sRGB,
+  // since tone mapping only applies automatically when drawing straight to the screen.
+  let composer = null, ssao = null;
+  if (T.EffectComposer && T.SSAOPass) {
+    try {
+      composer = new T.EffectComposer(renderer);
+      ssao = new T.SSAOPass(scene, camera, 2, 2);
+      ssao.kernelRadius = 0.22;
+      ssao.minDistance = 0.0004;
+      ssao.maxDistance = 0.018;
+      ssao.beautyRenderTarget.samples = 4;      // keep edges smooth inside the composer
+      composer.addPass(ssao);
+      composer.addPass(new T.ShaderPass({
+        uniforms: { tDiffuse: { value: null }, exposure: { value: 1.0 } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: `
+          uniform sampler2D tDiffuse; uniform float exposure; varying vec2 vUv;
+          vec3 jlFit(vec3 v){ vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
+          vec3 jlACES(vec3 c){
+            const mat3 i = mat3(vec3(0.59719,0.07600,0.02840), vec3(0.35458,0.90834,0.13383), vec3(0.04823,0.01566,0.83777));
+            const mat3 o = mat3(vec3(1.60475,-0.10208,-0.00327), vec3(-0.53108,1.10813,-0.07276), vec3(-0.07367,-0.00605,1.07602));
+            c *= exposure / 0.6; c = i * c; c = jlFit(c); c = o * c; return clamp(c, 0.0, 1.0);
+          }
+          vec3 jlSRGB(vec3 c){ return mix(pow(c, vec3(0.41666)) * 1.055 - vec3(0.055), c * 12.92, vec3(lessThanEqual(c, vec3(0.0031308)))); }
+          void main(){ vec4 t = texture2D(tDiffuse, vUv); gl_FragColor = vec4(jlSRGB(jlACES(t.rgb)), t.a); }`,
+      }));
+    } catch (e) { composer = null; }
+  }
+  let perfFrames = /[?&]ao=1/.test(location.search) ? 1e9 : 0, perfTime = 0;   // ?ao=1 keeps AO on for testing
+  const draw = () => (composer ? composer.render() : renderer.render(scene, camera));
 
   /* ───────── Textures ───────── */
   const canvasTex = (w, h, draw, repeat) => {
@@ -322,20 +355,20 @@
   const ribsFine = canvasTex(1024, 16, (g, w, h) => { g.fillStyle = '#999'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 4) { g.fillStyle = '#222'; g.fillRect(x, 0, 2, h); } });
 
   const S5R = {
-    paint: new T.MeshPhysicalMaterial({ color: 0x151517, roughness: 0.62, roughnessMap: stipple, bumpMap: stipple, bumpScale: 0.0022, metalness: 0.1, clearcoat: 0.18, clearcoatRoughness: 0.45 }),
-    smooth: new T.MeshPhysicalMaterial({ color: 0x18181a, roughness: 0.4, metalness: 0.1, clearcoat: 0.35, clearcoatRoughness: 0.3 }),
-    leather: new T.MeshStandardMaterial({ color: 0x141415, roughness: 0.72, roughnessMap: pebbleDeep, bumpMap: pebbleDeep, bumpScale: 0.011 }),
-    knurl: new T.MeshStandardMaterial({ color: 0x1c1c1e, roughness: 0.42, metalness: 0.55, bumpMap: pyramid, bumpScale: 0.012 }),
+    paint: new T.MeshPhysicalMaterial({ color: 0x111112, roughness: 0.8, roughnessMap: stipple, bumpMap: stipple, bumpScale: 0.0032, metalness: 0, specularIntensity: 0.55, sheen: 0.25, sheenRoughness: 0.8, sheenColor: new T.Color(0x3a3a3c) }),
+    smooth: new T.MeshPhysicalMaterial({ color: 0x131314, roughness: 0.58, roughnessMap: satin, metalness: 0, specularIntensity: 0.7 }),
+    leather: new T.MeshPhysicalMaterial({ color: 0x0e0e0f, roughness: 0.86, roughnessMap: pebbleDeep, bumpMap: pebbleDeep, bumpScale: 0.016, specularIntensity: 0.6, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new T.Color(0x444446) }),
+    knurl: new T.MeshStandardMaterial({ color: 0x1a1a1c, roughness: 0.38, metalness: 0.75, bumpMap: pyramid, bumpScale: 0.016 }),
     dialTop: new T.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.3, roughnessMap: brushed, bumpMap: brushed, bumpScale: 0.002, metalness: 0.85 }),
-    ring: new T.MeshStandardMaterial({ color: 0x121213, roughness: 0.6, bumpMap: ribsFine, bumpScale: 0.012 }),
-    barrel: new T.MeshPhysicalMaterial({ color: 0x141416, roughness: 0.5, roughnessMap: stipple, bumpMap: stipple, bumpScale: 0.001, clearcoat: 0.2, clearcoatRoughness: 0.5 }),
+    ring: new T.MeshStandardMaterial({ color: 0x0f0f10, roughness: 0.78, bumpMap: ribsFine, bumpScale: 0.016 }),
+    barrel: new T.MeshPhysicalMaterial({ color: 0x111112, roughness: 0.72, roughnessMap: stipple, bumpMap: stipple, bumpScale: 0.0018, specularIntensity: 0.6 }),
     rubber: new T.MeshStandardMaterial({ color: 0x0f0f10, roughness: 0.92, bumpMap: fine, bumpScale: 0.002 }),
     chrome: new T.MeshStandardMaterial({ color: 0xdcdee2, roughness: 0.14, metalness: 1 }),
-    button: new T.MeshPhysicalMaterial({ color: 0x1b1b1d, roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.25 }),
+    button: new T.MeshPhysicalMaterial({ color: 0x161617, roughness: 0.45, roughnessMap: satin, specularIntensity: 0.8 }),
     plate: new T.MeshPhysicalMaterial({ color: 0x0c0c0d, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.15 }),
     redRing: new T.MeshPhysicalMaterial({ color: 0xc0182e, roughness: 0.25, metalness: 0.6, clearcoat: 0.8 }),
     coating: new T.MeshPhysicalMaterial({ color: 0x0a0910, roughness: 0.02, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0, iridescence: 1, iridescenceIOR: 1.8, iridescenceThicknessRange: [280, 720], envMapIntensity: 1.8 }),
-    frontGlass: new T.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0, metalness: 0, transmission: 1, thickness: 0.05, ior: 1.6, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.9, iridescenceIOR: 1.8, iridescenceThicknessRange: [300, 680], envMapIntensity: 1.6, attenuationColor: new T.Color(0x2a2338), attenuationDistance: 0.4 }),
+    frontGlass: new T.MeshPhysicalMaterial({ color: 0x000000, roughness: 0, metalness: 0, transparent: true, opacity: 0.32, depthWrite: false, clearcoat: 1, clearcoatRoughness: 0, iridescence: 0.85, iridescenceIOR: 1.8, iridescenceThicknessRange: [300, 680], specularIntensity: 1, envMapIntensity: 2.6 }),
     blackInner: new T.MeshStandardMaterial({ color: 0x050505, roughness: 0.85 }),
   };
   // Printed markings around the top face of a dial (letters radiate from the centre).
@@ -466,7 +499,7 @@
     add(mesh(cylZ(0.385, 0.36, 0.13, 96, true), P.barrel, lx, ly, z + 0.065)); z += 0.13;   // open tube: the glass shows through
     const frontZ = z;
     add(mesh(new T.TorusGeometry(0.37, 0.016, 16, 128), P.barrel, lx, ly, frontZ));
-    add(mesh(cylZ(0.355, 0.355, 0.03, 128, true), P.dialTop, lx, ly, frontZ - 0.02));     // filter thread
+    add(mesh(cylZ(0.355, 0.355, 0.03, 128, true), P.knurl, lx, ly, frontZ - 0.02));       // filter thread
     const throat = mesh(cylZ(0.345, 0.3, 0.12, 96, true), P.blackInner, lx, ly, frontZ - 0.08); throat.material = throat.material.clone(); throat.material.side = T.DoubleSide; g.add(throat);
     add(mesh(cylZ(0.3, 0.3, 0.01, 64), P.blackInner, lx, ly, frontZ - 0.19));               // back wall behind the elements
     const elem = (r, zz, sy, mat = P.coating) => { const d = mesh(new T.SphereGeometry(r, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), mat, lx, ly, zz); d.rotation.x = Math.PI / 2; d.scale.set(1, sy, 1); g.add(d); };
@@ -782,6 +815,7 @@
   function resize() {
     W = wrap.clientWidth; H = wrap.clientHeight;
     renderer.setSize(W, H, false);
+    if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(W, H); }
     camera.aspect = W / H;
     baseDist = camera.aspect >= 1.25 ? 8.2 : 8.2 * (camera.aspect < 1 ? 1.02 : 1.25) / camera.aspect;
     camera.position.set(0, 0.55, baseDist);
@@ -862,7 +896,12 @@
     camera.position.set(look.x * 0.6, 0.55 + look.y * 0.5, baseDist * (1 - 0.26 * zoom));
     camera.lookAt(look);
 
-    renderer.render(scene, camera);
+    draw();
+    // if the AO pass makes this device struggle, drop it and keep the frame rate
+    if (composer && perfFrames < 90) {
+      perfFrames++; perfTime += dt;
+      if (perfFrames === 90 && perfTime / 90 > 1 / 32) composer = null;
+    }
 
     // hotspots follow their anchors and hide when they face away
     if (m && !swap) {
@@ -904,6 +943,6 @@
   document.addEventListener('visibilitychange', () => setRunning(onScreen && !document.hidden));
 
   show(G.devices[0].id);
-  renderer.render(scene, camera);
+  draw();
   wrap.classList.add('ready');
 })();
