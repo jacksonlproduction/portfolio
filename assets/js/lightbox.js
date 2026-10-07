@@ -7,6 +7,7 @@
   const lbVideo = document.getElementById('lb-video');
   const lbTitle = document.getElementById('lb-title');
   const lbKind = document.getElementById('lb-kind');
+  const lbBlurb = document.getElementById('lb-blurb');
   let isOpen = false, lastFocus = null;
 
   function announce() {
@@ -19,6 +20,7 @@
     if (!p) return;
     lbTitle.textContent = p.title;
     lbKind.textContent = window.projectMeta ? window.projectMeta(p) : p.kind;
+    if (lbBlurb) { lbBlurb.textContent = p.blurb || ''; lbBlurb.hidden = !p.blurb; }
     lbVideo.replaceChildren();
     lbVideo.classList.toggle('vertical', !!p.vertical);   // Shorts play in a tall 9:16 player
     if (p.youtube) {
