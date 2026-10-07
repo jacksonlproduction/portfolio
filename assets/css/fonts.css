@@ -1,14 +1,23 @@
 /* Site fonts — Jackson Luria's own files, converted to woff2 from fonts/src/.
    Families: Poppins (body, 200–900 + italics), Apple Garamond (300/400/700 + italics),
-   Akira Expanded (800), Grith (display), Bidena (script, built from the .ttf — the .otf has a broken CFF table browsers reject). */
+   Akira Expanded (800), Grith (display), Aston Script (script). */
 
 :root {
   --f-body: "Poppins", "Helvetica Neue", Arial, sans-serif;
   --f-serif: "Apple Garamond", Garamond, "Times New Roman", serif;
   --f-wide: "Akira Expanded", "Arial Black", sans-serif;
   --f-tall: "Grith", Impact, "Arial Narrow", sans-serif;
-  --f-script: "Bidena", "Snell Roundhand", cursive;
+  --f-script: "Aston Script", "Snell Roundhand", cursive;
   --track-tight: -0.035em;
+}
+
+/* Aston Script is a single bold cut; declared as 400 so browsers never fake-bold it. */
+@font-face {
+  font-family: "Aston Script";
+  src: url("../../fonts/aston-script.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -63,14 +72,6 @@
   font-family: "Apple Garamond";
   src: url("../../fonts/apple-garamond-700.woff2") format("woff2");
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Bidena";
-  src: url("../../fonts/bidena-400.woff2") format("woff2");
-  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
