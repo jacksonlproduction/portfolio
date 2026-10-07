@@ -115,14 +115,24 @@
     box(1.2, 4.5, -5.9, 0.6, 1, Math.PI / 2, 0, new T.Color(2.6, 2.6, 2.6)); // left strip
     box(0.9, 4.5, 5.9, 0.6, -1, -Math.PI / 2, 0, new T.Color(1.6, 1.6, 1.6)); // right strip
     box(3, 0.8, 1.5, -2.2, 5.9, Math.PI, 0, new T.Color(0.45, 0.45, 0.45)); // low front fill
-    box(2.4, 2.4, 2, 1, -5.9, 0, 0, new T.Color(1.8, 0.2, 0.35));        // faint crimson kicker behind
+    box(2.4, 2.4, 2, 1, -5.9, 0, 0, new T.Color(0.7, 0.7, 0.75));        // soft back kicker for edge separation
     const pm = new T.PMREMGenerator(renderer);
     scene.environment = pm.fromScene(env, 0.035).texture;
     pm.dispose();
   }
-  const key = new T.DirectionalLight(0xffffff, 0.7);
-  key.position.set(3, 5, 4);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  const key = new T.DirectionalLight(0xffffff, 0.75);
+  key.position.set(2.5, 6, 3.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.radius = 6;
+  key.shadow.bias = -0.0004;
+  Object.assign(key.shadow.camera, { left: -2.5, right: 2.5, top: 2.5, bottom: -2.5, near: 1, far: 14 });
   scene.add(key, new T.AmbientLight(0xffffff, 0.08));
+  const catcher = new T.Mesh(new T.PlaneGeometry(8, 8), new T.ShadowMaterial({ opacity: 0.18 }));
+  catcher.rotation.x = -Math.PI / 2; catcher.receiveShadow = true;
+  scene.add(catcher);
 
   /* ───────── Textures ───────── */
   const canvasTex = (w, h, draw, repeat) => {
@@ -215,34 +225,169 @@
   const A = (p, n) => ({ p: new T.Vector3(...p), n: new T.Vector3(...n).normalize() });
 
   /* ───────── Models ───────── */
+  /* ───────── Detail helpers (used by the hi-detail S5) ───────── */
+  // Pebbled leatherette: a height map of tiny bumps, used as bump + roughness variation.
+  const pebble = canvasTex(512, 512, (g, w, h) => {
+    g.fillStyle = '#7a7a7a'; g.fillRect(0, 0, w, h);
+    for (let k = 0; k < 5200; k++) {
+      const x = Math.random() * w, y = Math.random() * h, r = 2 + Math.random() * 4.5;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(0,0,0,.25)');
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    }
+  }, [3, 3]);
+  const satin = canvasTex(256, 256, (g, w, h) => noise(g, w, h, 40), [4, 4]);
+  const S5MAT = {
+    paint: new T.MeshPhysicalMaterial({ color: 0x1b1b1d, roughness: 0.46, roughnessMap: satin, metalness: 0.15, clearcoat: 0.28, clearcoatRoughness: 0.38, bumpMap: fine, bumpScale: 0.0012 }),
+    leather: new T.MeshStandardMaterial({ color: 0x151516, roughness: 0.82, roughnessMap: pebble, bumpMap: pebble, bumpScale: 0.0065 }),
+    rubber: new T.MeshStandardMaterial({ color: 0x111112, roughness: 0.95, bumpMap: leather, bumpScale: 0.003 }),
+    chrome: new T.MeshStandardMaterial({ color: 0xd9dbde, roughness: 0.16, metalness: 1 }),
+    satinMetal: new T.MeshStandardMaterial({ color: 0x8d9095, roughness: 0.32, metalness: 1, bumpMap: fine, bumpScale: 0.001 }),
+    button: new T.MeshPhysicalMaterial({ color: 0x1e1e20, roughness: 0.38, clearcoat: 0.4, clearcoatRoughness: 0.3 }),
+    eyeGlass: new T.MeshPhysicalMaterial({ color: 0x050608, roughness: 0.05, clearcoat: 1, envMapIntensity: 1.2 }),
+  };
+  // A band of printed text wrapped around a lens or dial (transparent canvas on an open cylinder).
+  function printBand(r, len, text, opt = {}) {
+    const W = 2048, H = 128;
+    const tex = canvasTex(W, H, g => {
+      g.clearRect(0, 0, W, H);
+      g.fillStyle = opt.color || '#f1f1f1';
+      g.font = opt.font || '500 54px Poppins, sans-serif';
+      g.textBaseline = 'middle';
+      const items = Array.isArray(text) ? text : [text];
+      items.forEach(([t, u]) => { g.textAlign = 'center'; g.fillText(t, u * W, H / 2 + 3); });
+    });
+    tex.wrapS = T.ClampToEdgeWrapping; tex.encoding = T.sRGBEncoding;
+    const geo = new T.CylinderGeometry(r, r, len, 96, 1, true);
+    if (opt.axisZ !== false) geo.rotateX(-Math.PI / 2); // text reads upright from the front of the camera
+    const m = new T.Mesh(geo, new T.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false, opacity: opt.opacity || 1 }));
+    return m;
+  }
+  // Ribbed rubber ring around +z (zoom/focus ring) using real geometry ridges, not just a texture.
+  function ribbedRing(r, len, ribs, depth, mat) {
+    const pts = [];
+    const steps = ribs * 2;
+    for (let k = 0; k <= steps; k++) {
+      const a = (k / steps) * Math.PI * 2;
+      const rr = r - (k % 2 ? depth : 0);
+      pts.push(new T.Vector2(Math.cos(a) * rr, Math.sin(a) * rr));
+    }
+    const shape = new T.Shape(pts);
+    const g = new T.ExtrudeGeometry(shape, { depth: len, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.004, bevelSegments: 2, curveSegments: 1 });
+    g.translate(0, 0, -len / 2);
+    return new T.Mesh(g, mat);
+  }
+  // Extruded shape from a 2D outline, with rounded edges, centred on its depth.
+  function extrudeRounded(shape, depth, r, segs = 4) {
+    const g = new T.ExtrudeGeometry(shape, { depth: Math.max(1e-4, depth - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: segs, curveSegments: 14 });
+    g.translate(0, 0, -(depth - 2 * r) / 2);
+    return g;
+  }
+
+  // Lumix S5: modelled on the real camera's layout (132.6 × 97.1 × 81.9 mm; 1 unit = 100 mm).
   function buildS5() {
-    const g = new T.Group(), body = M.body(0x1d1d1f);
-    g.add(mesh(rbox(1.32, 0.8, 0.46, 0.07), body));
-    g.add(mesh(rbox(1.18, 0.6, 0.02, 0.008), M.rubber, 0.06, -0.07, 0.232));            // textured front panel
-    g.add(mesh(rbox(0.34, 0.8, 0.36, 0.13), M.rubber, -0.5, 0, 0.18));                 // grip
-    const hs = new T.Shape(); hs.moveTo(-0.27, 0); hs.lineTo(0.27, 0); hs.lineTo(0.18, 0.23); hs.lineTo(-0.18, 0.23); hs.closePath();
-    const hump = new T.ExtrudeGeometry(hs, { depth: 0.34, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 3 });
-    hump.translate(0, 0, -0.17);
-    g.add(mesh(hump, body, 0.08, 0.37, -0.03));
-    g.add(mesh(rbox(0.2, 0.02, 0.16, 0.005), M.metal, 0.08, 0.64, -0.03));             // hot shoe
-    g.add(mesh(cylZ(0.33, 0.33, 0.04), M.metal, 0.08, -0.03, 0.25));                   // L-mount ring
-    const front = lens(g, 0.08, -0.03, 0.27, [[0.315, 0.08, M.barrel], [0.33, 0.2, M.ring], [0.32, 0.1, M.barrel], [0.325, 0.12, M.ring], [0.335, 0.07, M.barrel]], 0.255);
-    g.add(mesh(cylY(0.045, 0.025), M.metal, -0.52, 0.415, 0.24));                      // shutter
-    g.add(mesh(cylY(0.07, 0.035), M.knurled, -0.36, 0.41, 0.3));                       // front dial
-    const rec = mesh(cylY(0.032, 0.02), M.red(), -0.33, 0.41, 0.06); g.add(rec);       // record button
-    g.add(mesh(cylY(0.1, 0.07), M.knurled, 0.47, 0.43, -0.03));                        // mode dial
-    g.add(mesh(cylY(0.07, 0.03), M.knurled, -0.26, 0.41, -0.16));                      // rear dial
-    g.add(mesh(rbox(0.8, 0.54, 0.05, 0.04), body, 0.12, -0.05, -0.255));               // screen hinge housing
-    const scr = mesh(new T.PlaneGeometry(0.7, 0.44), M.screen, 0.12, -0.05, -0.282); scr.rotation.y = Math.PI; g.add(scr);
-    g.add(mesh(rbox(0.32, 0.22, 0.1, 0.05), M.rubber, 0.08, 0.5, -0.24));              // eyecup
-    [[0.57, 0.18], [0.57, 0.05], [0.57, -0.08], [0.57, -0.21]].forEach(([x, y]) => g.add(mesh(cylZ(0.028, 0.028, 0.02), M.darkMetal, x, y, -0.235)));
-    const tally = mesh(cylZ(0.022, 0.022, 0.01), M.tally(), -0.28, 0.29, 0.236); g.add(tally);
-    g.add(decal(textTex('LUMIX', '700 96px Poppins, sans-serif'), 0.32, 0.08, 0.08, 0.32, 0.236));
-    g.add(decal(textTex('S5', '600 80px Poppins, sans-serif', '#cfd0d2'), 0.14, 0.035, 0.55, -0.32, 0.236));
-    [-0.665, 0.665].forEach(x => { const lug = mesh(new T.TorusGeometry(0.035, 0.01, 8, 24), M.metal, x, 0.27, 0); lug.rotation.y = Math.PI / 2; g.add(lug); });
+    const g = new T.Group(), P = S5MAT;
+    const add = (m, cast = true) => { m.castShadow = cast; m.receiveShadow = true; g.add(m); return m; };
+
+    // Main body shell with the textured front plate inset
+    add(mesh(rbox(1.3, 0.78, 0.4, 0.055), P.paint));
+    add(mesh(rbox(1.06, 0.58, 0.014, 0.006), P.leather, 0.1, -0.08, 0.204));
+
+    // Grip: a sculpted D-shape in plan, extruded up the side, leatherette, with a painted top cap
+    const gs = new T.Shape();
+    gs.moveTo(-0.665, -0.16); gs.lineTo(-0.665, 0.3);
+    gs.bezierCurveTo(-0.665, 0.41, -0.58, 0.44, -0.48, 0.42);
+    gs.bezierCurveTo(-0.37, 0.4, -0.31, 0.33, -0.3, 0.22);
+    gs.lineTo(-0.3, -0.16); gs.closePath();
+    const gripGeo = extrudeRounded(gs, 0.68, 0.035); gripGeo.rotateX(Math.PI / 2);
+    const grip = add(mesh(gripGeo, P.leather, 0, -0.05, 0)); grip.scale.set(1, 1, 1);
+    const capGeo = extrudeRounded(gs, 0.1, 0.03); capGeo.rotateX(Math.PI / 2);
+    add(mesh(capGeo, P.paint, 0, 0.345, 0));
+
+    // Viewfinder housing: trapezoid in front view, front face slanted back, shoulders bevelled
+    const ps = new T.Shape();
+    ps.moveTo(-0.3, 0); ps.lineTo(0.3, 0); ps.lineTo(0.2, 0.25); ps.lineTo(-0.2, 0.25); ps.closePath();
+    const prism = extrudeRounded(ps, 0.38, 0.035, 5);
+    const pos = prism.attributes.position;
+    for (let k = 0; k < pos.count; k++) { const y = pos.getY(k), z = pos.getZ(k); if (z > 0) pos.setZ(k, z - Math.max(0, y) * 0.5); }
+    prism.computeVertexNormals();
+    add(mesh(prism, P.paint, 0.08, 0.37, -0.02));
+    add(mesh(rbox(0.21, 0.025, 0.17, 0.006), P.satinMetal, 0.08, 0.635, -0.05));          // hot shoe
+    add(mesh(rbox(0.17, 0.008, 0.13, 0.003), P.button, 0.08, 0.648, -0.05));
+    const brand = decal(textTex('LUMIX', '600 92px Poppins, sans-serif', '#f4f4f4'), 0.28, 0.07, 0.08, 0.5, 0.118, 0, -Math.atan(0.5));
+    g.add(brand);
+
+    // L-Mount: black throat, chrome bayonet, lens release button
+    add(mesh(cylZ(0.35, 0.35, 0.02), P.paint, 0.1, -0.04, 0.212));
+    add(mesh(cylZ(0.31, 0.31, 0.022), P.chrome, 0.1, -0.04, 0.232));
+    add(mesh(cylZ(0.035, 0.035, 0.02), P.button, 0.5, -0.2, 0.212));
+    [[-0.17, -0.18], [-0.17, -0.29]].forEach(([x, y]) => add(mesh(cylZ(0.024, 0.024, 0.016), P.button, x, y, 0.212)));   // Fn buttons by the grip
+
+    // Lumix S 20–60mm f/3.5–5.6
+    const lx = 0.1, ly = -0.04;
+    let z = 0.243;
+    const seg = (r1, r2, len, mat) => { add(mesh(cylZ(r2, r1, len), mat, lx, ly, z + len / 2)); z += len; };
+    seg(0.3, 0.305, 0.045, P.paint);
+    const zoomZ0 = z; seg(0.31, 0.31, 0.03, P.paint);
+    const zoom = ribbedRing(0.327, 0.21, 90, 0.01, P.rubber); zoom.position.set(lx, ly, z + 0.105); add(zoom); z += 0.21;
+    seg(0.315, 0.315, 0.035, P.paint);
+    const midZ = z - 0.018;
+    const focus = ribbedRing(0.318, 0.075, 140, 0.006, P.rubber); focus.position.set(lx, ly, z + 0.04); add(focus); z += 0.08;
+    seg(0.322, 0.335, 0.11, P.paint);
+    const frontZ = z;
+    add(mesh(new T.TorusGeometry(0.31, 0.014, 14, 96), P.paint, lx, ly, frontZ));
+    add(mesh(cylZ(0.29, 0.29, 0.02), P.satinMetal, lx, ly, frontZ - 0.012));             // filter thread
+    add(mesh(cylZ(0.27, 0.27, 0.04), P.paint, lx, ly, frontZ - 0.05));                          // inner black baffle
+    const dome = mesh(new T.SphereGeometry(0.27, 64, 24, 0, Math.PI * 2, 0, Math.PI / 2), M.glass, lx, ly, frontZ - 0.045);
+    dome.rotation.x = Math.PI / 2; dome.scale.set(1, 0.22, 1); g.add(dome);                         // convex front element
+    const inner = mesh(new T.SphereGeometry(0.15, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), M.glass, lx, ly, frontZ - 0.07);
+    inner.rotation.x = Math.PI / 2; inner.scale.set(1, 0.3, 1); g.add(inner);
+    const scale = printBand(0.312, 0.03, [['20', 0.44], ['24', 0.47], ['28', 0.5], ['35', 0.53], ['50', 0.56], ['60', 0.59]], { font: '600 88px Poppins, sans-serif' });
+    scale.position.set(lx, ly, zoomZ0 + 0.015); scale.rotation.z = Math.PI; g.add(scale);
+    const lensName = printBand(0.317, 0.034, [['LUMIX S', 0.4], ['1:3.5-5.6/20-60', 0.56]], { font: '500 84px Poppins, sans-serif' });
+    lensName.position.set(lx, ly, midZ); lensName.rotation.z = Math.PI; g.add(lensName);
+    const frontText = printBand(0.337, 0.03, [['LUMIX S  20-60  ASPH.', 0.5]], { font: '500 76px Poppins, sans-serif', opacity: 0.85 });
+    frontText.position.set(lx, ly, frontZ - 0.035); frontText.rotation.z = Math.PI; g.add(frontText);
+
+    // Top plate: mode dial with markings (camera's left shoulder = +x), grip controls on the right
+    add(mesh(cylY(0.115, 0.012), P.paint, 0.46, 0.396, -0.03));
+    add(mesh(cylY(0.105, 0.06), M.knurled, 0.46, 0.43, -0.03));
+    const marks = printBand(0.1065, 0.03, ['iA', 'P', 'A', 'S', 'M', 'C1', 'C2', 'C3', 'S&Q'].map((t, k) => [t, (k + 0.5) / 9]), { axisZ: false, font: '600 60px Poppins, sans-serif' });
+    marks.position.set(0.46, 0.43, -0.03); g.add(marks);
+    add(mesh(cylY(0.045, 0.02), P.button, 0.46, 0.468, -0.03));
+    const shutterBase = add(mesh(cylY(0.05, 0.02), P.paint, -0.46, 0.405, 0.3)); shutterBase.rotation.x = 0.25;
+    const shutter = add(mesh(new T.SphereGeometry(0.038, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), P.satinMetal, -0.46, 0.415, 0.3)); shutter.scale.y = 0.45;
+    const fdial = add(mesh(cylY(0.07, 0.035), M.knurled, -0.4, 0.4, 0.38)); fdial.rotation.x = 0.35;     // front dial
+    const rec = add(mesh(cylY(0.026, 0.016), M.red(), -0.33, 0.402, 0.18));                               // video record
+    [-0.27, -0.2, -0.13].forEach(x => add(mesh(rbox(0.05, 0.016, 0.04, 0.008), P.button, x, 0.398, 0.08))); // WB / ISO / ±
+    add(mesh(cylY(0.068, 0.034), M.knurled, -0.47, 0.405, -0.12));                                        // rear dial
+
+    // Back: free-angle screen (hinged on the camera's left), eyecup, joystick, wheel and buttons
+    add(mesh(rbox(0.84, 0.56, 0.045, 0.03), P.paint, 0.08, -0.07, -0.226));
+    const scr = mesh(new T.PlaneGeometry(0.74, 0.47), M.screen, 0.08, -0.07, -0.2495); scr.rotation.y = Math.PI; g.add(scr);
+    add(mesh(cylY(0.022, 0.42), P.paint, 0.505, -0.07, -0.226));
+    add(mesh(rbox(0.32, 0.21, 0.09, 0.05), P.rubber, 0.08, 0.53, -0.235));
+    const eye = mesh(new T.PlaneGeometry(0.18, 0.11), P.eyeGlass, 0.08, 0.53, -0.281); eye.rotation.y = Math.PI; g.add(eye);
+    add(mesh(rbox(0.2, 0.16, 0.02, 0.01), P.leather, -0.5, 0.2, -0.206));                                 // thumb rest
+    add(mesh(cylZ(0.03, 0.03, 0.02), P.button, -0.36, 0.06, -0.21));                                       // joystick
+    add(mesh(new T.SphereGeometry(0.02, 16, 12), P.button, -0.36, 0.06, -0.224));
+    const wheel = add(mesh(new T.TorusGeometry(0.075, 0.016, 12, 48), M.knurled, -0.4, -0.16, -0.214));
+    add(mesh(cylZ(0.04, 0.04, 0.012), P.button, -0.4, -0.16, -0.21));
+    [[-0.27, 0.2], [-0.56, -0.03], [-0.56, -0.3], [-0.27, -0.31], [-0.2, 0.06]].forEach(([x, y]) => add(mesh(cylZ(0.022, 0.022, 0.014), P.button, x, y, -0.207)));
+
+    // Sides: port doors (camera's left), card door (grip side), strap lugs
+    add(mesh(rbox(0.014, 0.3, 0.24, 0.006), P.rubber, 0.652, -0.02, -0.02));
+    add(mesh(rbox(0.014, 0.34, 0.24, 0.006), P.paint, -0.662, -0.06, 0.05));
+    [0.656, -0.668].forEach(x => { const lug = add(mesh(new T.TorusGeometry(0.032, 0.009, 8, 20), P.satinMetal, x, 0.29, -0.04)); lug.rotation.y = Math.PI / 2; });
+    add(mesh(cylY(0.03, 0.006), P.satinMetal, 0.1, -0.392, -0.02));                                        // tripod socket
+
+    // Front details: tally lamp, badge
+    const tally = mesh(new T.SphereGeometry(0.02, 16, 12), M.tally(), -0.21, 0.29, 0.205); tally.scale.z = 0.4; g.add(tally);
+    g.add(decal(textTex('S5', '600 80px Poppins, sans-serif', '#d6d7d9'), 0.11, 0.03, 0.55, -0.31, 0.2125));
+
     return {
       group: g, rec, tally,
-      anchors: { lens: A([0.08, -0.03, front + 0.02], [0, 0, 1]), record: A([-0.33, 0.43, 0.06], [0, 1, 0.15]), screen: A([0.12, -0.05, -0.29], [0, 0, -1]), evf: A([0.08, 0.5, -0.3], [0, 0.25, -1]) },
+      anchors: { lens: A([lx, ly, frontZ + 0.01], [0, 0, 1]), record: A([-0.33, 0.42, 0.18], [0, 1, 0.15]), screen: A([0.08, -0.07, -0.26], [0, 0, -1]), evf: A([0.08, 0.53, -0.29], [0, 0.25, -1]) },
     };
   }
 
@@ -447,6 +592,7 @@
     const m = getModel(id);
     pivot.add(m.holder);
     shadow.position.y = m.floor - 0.04;
+    catcher.position.y = m.floor - 0.035;
     yaw = DEFAULT.yaw - (reduce ? 0 : 1.1); tYaw = DEFAULT.yaw; tPitch = DEFAULT.pitch;
   }
 
