@@ -26,7 +26,6 @@
       <a class="nav-logo" href="#top" data-cursor="link">Jackson Luria</a>
       <ul class="nav-links">
         <li><a href="#work" data-cursor="link" data-magnet>Work</a></li>
-        <li><a href="#gear" data-cursor="link" data-magnet>Gear</a></li>
         <li><a href="#about" data-cursor="link" data-magnet>About</a></li>
       </ul>
       <div class="nav-right">
@@ -40,9 +39,8 @@
     <nav aria-label="Menu">
       <ol class="menu-links">
         <li><a href="#work"><small>01</small>Work</a></li>
-        <li><a href="#gear"><small>02</small>Gear</a></li>
-        <li><a href="#about"><small>03</small>About</a></li>
-        <li><a href="#contact"><small>04</small>Contact</a></li>
+        <li><a href="#about"><small>02</small>About</a></li>
+        <li><a href="#contact"><small>03</small>Contact</a></li>
       </ol>
     </nav>
     <p class="menu-foot"><a href="https://www.instagram.com/jacksonluria" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.tiktok.com/@jacksonluria" target="_blank" rel="noopener">TikTok</a></p>
@@ -103,52 +101,6 @@
         <p>More on <span class="scribble">YouTube<svg viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M1 6 C 20 2, 45 9, 62 5 S 90 3, 99 6"/></svg></span> and Instagram.</p>
         <a class="pill" href="https://www.instagram.com/jacksonluria" target="_blank" rel="noopener" data-cursor="link" data-magnet>@jacksonluria</a>
       </div>
-    </section>
-
-    <!-- ═════════ GEAR ═════════ -->
-    <section class="gear" id="gear" aria-labelledby="gear-title">
-      <div class="gear-head">
-        <div class="rv">
-          <p class="eyebrow">The kit</p>
-          <h2 class="gear-title" id="gear-title">My gear</h2>
-        </div>
-        <div class="gear-side rv" style="--rd:.1s">
-          <p class="gear-intro">What I shoot on. Spin them around, tap the red dots, and yes, the drone flies.</p>
-          <div class="gear-tabs" role="tablist" aria-label="Drawings" id="gear-tabs"></div>
-        </div>
-      </div>
-
-      <div class="gear-stage">
-        <div class="g3d rv" id="g3d">
-          <canvas class="g3d-canvas" id="g3d-canvas" tabindex="0" aria-label="3D model of the selected gear. Drag or use the arrow keys to turn it." data-cursor="drag" data-label="Drag to spin" data-cursor-float></canvas>
-          <div class="g3d-spots" id="g3d-spots"></div>
-          <div class="g3d-callout" id="g3d-callout" aria-live="polite"><p class="gc-label"></p><p class="gc-text"></p></div>
-          <div class="g3d-tools">
-            <div class="g3d-swatches" id="g3d-swatches" hidden></div>
-            <button type="button" class="g3d-takeoff" id="g3d-takeoff" aria-pressed="false" hidden data-cursor="link" data-magnet>Take off</button>
-          </div>
-          <p class="g3d-hint">Drag to spin · double-click to reset</p>
-        </div>
-
-        <aside class="gear-detail rv" style="--rd:.15s" aria-live="polite">
-          <div class="gd-top">
-            <span class="gd-count"><span id="gd-index">01</span> / <span id="gd-total">04</span></span>
-            <span class="gd-nav">
-              <button type="button" class="gd-btn" id="gd-prev" aria-label="Previous camera" data-cursor="link">&larr;</button>
-              <button type="button" class="gd-btn" id="gd-next" aria-label="Next camera" data-cursor="link">&rarr;</button>
-            </span>
-          </div>
-          <div class="gd-body" id="gd-body">
-            <h3 class="gd-name" id="gd-name">Lumix S5</h3>
-            <p class="gd-model" id="gd-model">Panasonic · full-frame mirrorless</p>
-            <p class="gd-note" id="gd-note"></p>
-            <p class="gd-part" id="gd-part" hidden></p>
-            <dl class="gd-specs" id="gd-specs"></dl>
-          </div>
-        </aside>
-      </div>
-
-      <div class="kit rv" id="kit" aria-label="Full kit list"></div>
     </section>
 
     <!-- ═════════ ABOUT (scrapbook) ═════════ -->
@@ -226,6 +178,7 @@
           <div><dt>Shooting since</dt><dd>Year</dd></div>
           <div><dt>Drone</dt><dd>Licensed pilot</dd></div>
           <div><dt>Travel</dt><dd>Yes, anywhere</dd></div>
+          <div class="fact-wide"><dt>Shoots on</dt><dd>Lumix S5 · Lumix S9 · Blackmagic Pocket 6K Pro · DJI Mavic 3 Pro</dd></div>
         </dl>
         <a class="pill dark rv" href="#contact" data-cursor="link" data-magnet style="--rd:.25s">Work with me <span aria-hidden="true">&rarr;</span></a>
       </div>
@@ -326,13 +279,10 @@
   </div>
 
   <script src="assets/vendor/three-0.149.0.min.js"></script>
-  <script src="assets/vendor/three-post-0.149.0.js"></script>
   <script src="assets/js/projects.js"></script>
   <script src="assets/js/lightbox.js"></script>
   <script src="assets/js/hero-reel.js"></script>
   <script src="assets/js/work.js"></script>
-  <script src="assets/js/gear-data.js"></script>
-  <script src="assets/js/gear3d.js"></script>
   <script src="assets/js/scrapbook.js"></script>
   <script src="assets/js/contact.js"></script>
   <script src="assets/js/nav.js"></script>
