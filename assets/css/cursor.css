@@ -1,0 +1,48 @@
+/* Focus Ball cursor
+   A stretchy ball that morphs into a highlight around anything marked with data-cursor.
+   data-cursor="link"  → soft grey highlight shaped like the element, crimson pointer dot
+   data-cursor="play"  → thin outline around the element + label (data-label) at the pointer
+   data-cursor="drag"  → same as play, for draggable strips
+   Add data-magnet to make an element lean toward the pointer. */
+
+:root {
+  --cursor-ink: #0b0b0b;
+  --cursor-accent: #b3122e;
+  --cursor-tint: rgba(11, 11, 11, .08);
+}
+
+.has-cursor, .has-cursor * { cursor: none !important; }
+
+#cur { position: fixed; inset: 0; pointer-events: none; z-index: 9999; transition: opacity .25s; }
+#cur.hidden { opacity: 0; }
+
+#cur .hl {
+  position: fixed; left: 0; top: 0;
+  width: 16px; height: 16px; border-radius: 8px;
+  background: var(--cursor-ink);
+  box-shadow: inset 0 0 0 1.5px transparent;
+  transform-origin: 50% 50%;
+  will-change: transform, width, height;
+  transition: background .35s, box-shadow .35s;
+}
+#cur.locked.s-link .hl { background: var(--cursor-tint); }
+#cur.locked.s-play .hl, #cur.locked.s-drag .hl { background: transparent; box-shadow: inset 0 0 0 1.5px var(--cursor-ink); }
+
+#cur .pt {
+  position: fixed; left: 0; top: 0; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  border-radius: 50%; background: var(--cursor-ink); opacity: 0;
+  transition: opacity .25s, background .3s;
+}
+#cur.locked.s-link .pt { opacity: 1; background: var(--cursor-accent); }
+
+#cur .tag {
+  position: fixed; left: 0; top: 0; padding: 7px 14px 8px; border-radius: 999px;
+  background: #fff; color: var(--cursor-ink);
+  font: 500 12.5px/1.2 "Poppins", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em;
+  white-space: nowrap; translate: -50% -50%; scale: .4; opacity: 0;
+  transition: opacity .25s, scale .45s cubic-bezier(.2, .8, .2, 1);
+}
+#cur.locked.s-play .tag, #cur.locked.s-drag .tag { opacity: 1; scale: 1; }
+#cur.down .tag { scale: .9; }
+
+[data-magnet] { transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
