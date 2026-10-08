@@ -35,7 +35,6 @@ In `index.html`, search for `about-fan`. The five polaroids sit in a fan that sp
 - Email: change `hello@jacksonluria.com` in `index.html` (search for it) **and** `CONTACT_EMAIL` at the top of `assets/js/contact.js`.
 - Form: only a name and an email *or* phone number are required; budget, date and location are tucked under "Add budget, date or location". What someone types is kept in their browser until they send it, and "Want one like this?" in the video player jumps to the form with that project's type picked.
 - Sending: messages go through Formspree (form `mnpjdbba`) to the inbox on your Formspree account. Change the notification email, see past messages or adjust spam settings at formspree.io. The endpoint is `FORM_ENDPOINT` at the top of `assets/js/contact.js`.
-- (Old note) Without an endpoint, "Send it" opens the visitor's email app pre-filled. To get messages straight to your inbox, make a free form at formspree.io and paste its URL into `FORM_ENDPOINT` in `assets/js/contact.js`.
 - Social links (Instagram, TikTok, YouTube) are in the contact section and the phone menu in `index.html`.
 
 ## Signature intro
