@@ -51,9 +51,9 @@ button { font: inherit; color: inherit; }
 /* The hero scrolls away normally; as it leaves, its contents drift and fade (see --out in hero-reel.js). */
 .hero {
   position: relative;
-  height: 100svh;
-  min-height: 640px;
-  max-height: 1100px;
+  height: 116svh;   /* a little taller than the screen so the whole reel fits before the white section */
+  min-height: 700px;
+  max-height: 1240px;
   background: var(--night);
   color: #fff;
   overflow: hidden;
@@ -63,6 +63,7 @@ button { font: inherit; color: inherit; }
   padding-inline: var(--gutter);
   padding-block: calc(max(20px, env(safe-area-inset-top)) + 64px) max(22px, env(safe-area-inset-bottom));
 }
+@media (max-width: 640px) { .hero { height: 100svh; min-height: 640px; } }   /* phones: the reel is a wide band, so one screen is enough */
 
 .hero-glow, .hero-glow-boost {
   position: absolute;
