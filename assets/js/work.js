@@ -1,9 +1,10 @@
-// Selected work: your top three up front, and every project behind "See all work" (filterable).
-// Cards come from projects.js and have hover-to-preview. Clicking one opens the shared lightbox.
+// Project cards with hover-to-preview. Clicking one opens the shared lightbox.
+//   index.html: #work-grid shows your top three (top: true in projects.js) + a "See all work" link.
+//   work.html:  #work-all-grid shows every project, with filter chips.
 (() => {
   const grid = document.getElementById('work-grid');
   const allGrid = document.getElementById('work-all-grid');
-  if (!grid || !allGrid) return;
+  if (!grid && !allGrid) return;
   const P = window.PROJECTS || [];
   let TOP = P.filter(p => p.top).slice(0, 3);
   if (!TOP.length) TOP = P.slice(0, 3);
@@ -84,8 +85,8 @@
     btn.addEventListener('click', () => window.Lightbox && window.Lightbox.open(i));
     return { p, i, li, media, video };
   }
-  const topCards = TOP.map(p => makeCard(p, grid, true));
-  const cards = P.map(p => makeCard(p, allGrid, false));   // the "All work" grid (filters act on these)
+  const topCards = grid ? TOP.map(p => makeCard(p, grid, true)) : [];
+  const cards = allGrid ? P.map(p => makeCard(p, allGrid, false)) : [];   // the All work page (filters act on these)
   const everyCard = topCards.concat(cards);
 
   /* ───────── Preview: hover on desktop, centre-of-screen on touch ───────── */
@@ -142,32 +143,17 @@
   const rippleDelays = () => { let n = 0; cards.forEach(c => { if (!c.li.hidden) c.li.style.setProperty('--rd', `${(n++ % 3) * 0.08}s`); }); };
   rippleDelays();
 
-  /* ───────── See all work ───────── */
-  const allBox = document.getElementById('work-all');
-  const allBtn = document.getElementById('work-all-btn');
-  const allLabel = allBtn && allBtn.querySelector('.wa-label');
+  /* ───────── See all work (link to work.html) ───────── */
   const allCount = document.getElementById('work-all-count');
   if (allCount) allCount.textContent = P.length;
-  if (allBtn && P.length <= TOP.length) allBtn.closest('.work-all-toggle').hidden = true;
-  if (allBtn) allBtn.addEventListener('click', () => {
-    const open = allBox.hidden;
-    allBox.hidden = !open;
-    allBtn.setAttribute('aria-expanded', String(open));
-    allBtn.classList.toggle('open', open);
-    if (allLabel) allLabel.textContent = open ? 'Show less' : 'See all work';
-    dispatchEvent(new Event('cursor:refresh'));
-    if (open) {
-      if (!reduce) allBox.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' });
-      allBox.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    } else {
-      cards.forEach(stop);
-      allBtn.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-    }
-  });
+  const allLink = document.getElementById('work-all-btn');
+  if (allLink && P.length <= TOP.length) allLink.closest('.work-all-toggle').hidden = true;
 
   /* ───────── Filters ───────── */
   const filters = document.getElementById('work-filters');
   const count = document.getElementById('work-count');
+  if (count) count.textContent = allGrid ? P.length : TOP.length;
+  if (!filters || !allGrid) return;
   const kinds = [];
   P.forEach(p => { if (!kinds.includes(p.kind)) kinds.push(p.kind); });
   const tally = k => P.filter(p => k === 'all' || p.kind === k).length;
@@ -186,7 +172,6 @@
     filters.append(b);
     return b;
   });
-  if (count) count.textContent = TOP.length;
   if (kinds.length < 2) filters.hidden = true;   // nothing to filter yet
 
   let current = 'all';
@@ -204,6 +189,7 @@
       c.li.classList.add('in'); // never leave a re-shown card waiting for a scroll reveal
     });
     rippleDelays();
+    if (count) count.textContent = cards.filter(c => !c.li.hidden).length;
     if (reduce) return;
     cards.forEach(c => {
       if (c.li.hidden) return;

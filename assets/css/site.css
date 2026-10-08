@@ -393,15 +393,22 @@ button { font: inherit; color: inherit; }
 .wa-btn { gap: 10px; padding: 14px 24px; font-size: 15px; cursor: pointer; }
 .wa-btn sup { font-size: 10px; opacity: .6; margin-left: -4px; }
 .wa-arrow { display: inline-block; transition: transform .5s var(--ease-out); }
-.wa-btn:hover .wa-arrow { transform: translateY(3px); }
-.wa-btn.open .wa-arrow { transform: rotate(180deg); }
-.work-all { display: grid; gap: clamp(28px, 4vw, 44px); padding-top: clamp(8px, 2vw, 24px); min-width: 0; }
-.work-all-head .work-filters { min-width: 0; max-width: 100%; }
-.work-all[hidden] { display: none; }
-.work-all-head { display: flex; align-items: end; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; min-width: 0; }
-@media (max-width: 640px) { .work-all-head { display: grid; } }
-.work-all-title { margin: 0; font-family: var(--f-wide); font-weight: 800; font-size: clamp(26px, 3.2vw, 44px); letter-spacing: -.05em; line-height: .9; text-transform: uppercase; }
-.work-all-title em { font-family: var(--f-serif); font-weight: 400; font-style: italic; text-transform: none; letter-spacing: -.03em; }
+.wa-btn:hover .wa-arrow { transform: translateX(4px); }
+
+/* All work page (work.html) */
+.work-page { padding-top: clamp(116px, 17vh, 190px); }
+.work-page .work-filters { min-width: 0; }
+.back-link {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; margin-bottom: -12px;
+  font-size: 14px; font-weight: 500; text-decoration: none; color: var(--ink-2); transition: color .3s;
+}
+.back-link:hover { color: var(--ink); }
+.back-link span { transition: transform .4s var(--ease-out); }
+.back-link:hover span { transform: translateX(-4px); }
+.nav-links a[aria-current="page"] { opacity: 1; }
+.contact-cta .contact-inner { gap: clamp(28px, 4vw, 44px); }
+.cta-row { display: flex; align-items: center; justify-content: space-between; gap: 24px 40px; flex-wrap: wrap; }
+.cta-row .send { margin-left: 0; text-decoration: none; }
 /* Featured piece: full width at the top of the grid, with its proof point on a glass badge */
 .card.featured { grid-column: 1 / -1; }
 .card.featured .card-media { aspect-ratio: 21 / 9; }
