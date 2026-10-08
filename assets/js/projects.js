@@ -2,7 +2,7 @@
 //   title, kind  — shown on the reel, cards and player. `kind` also creates the filter chips.
 //   client       — optional; who it was for, shown with the kind (e.g. "Carlsbad High Football").
 //   year, length — optional; left blank they're simply hidden.
-//   featured     — true to show it first as a full-width card with its stat badge.
+//   featured     — true to show it as a full-width card with its stat badge (keep these at the top of the list).
 //   stat         — optional proof point, e.g. '160K views on TikTok' (badge on the card, reel and player).
 //   blurb        — optional one-line pitch shown under the title in the player.
 //   youtube      — the video ID from the link (the part after "v=", "youtu.be/" or "shorts/").
@@ -12,6 +12,7 @@
 //   tint         — two colours for the backdrop while the thumbnail loads.
 window.PROJECTS = [
   { title: 'Wales', client: '', kind: 'Travel edit', featured: true, stat: '160K views on TikTok', blurb: 'A travel edit from a trip across Wales that took off on TikTok, passing 160,000 views.', year: '', length: '', youtube: 'ZgR1h7l1MBs', vertical: false, poster: '', preview: '', tint: ['#1f2d26', '#070908'] },
+  { title: 'Blueface, Live in San Diego', client: '', kind: 'Event', featured: true, stat: 'Worked with Blueface', blurb: 'Filmed rapper Blueface performing at an intimate party in San Diego: up-close, high-energy coverage that puts you right in the room.', year: '', length: '', youtube: '6BGbgoKNAbc', vertical: true, poster: '', preview: '', tint: ['#13233f', '#06080d'] },
   { title: 'Back in Black', client: 'Carlsbad High Football', kind: 'Hype edit', year: '', length: '', youtube: 'XrILXU8Qkow', vertical: false, poster: '', preview: '', tint: ['#2a2a2a', '#070707'] },
   { title: 'Drone Sample', client: '', kind: 'Drone', year: '', length: '', youtube: 'msb17SudMss', vertical: false, poster: '', preview: '', tint: ['#23313a', '#090909'] },
   { title: 'Football Hype Edit', client: '', kind: 'Hype edit', year: '', length: '', youtube: 'Gl8d3AwS854', vertical: false, poster: '', preview: '', tint: ['#5a0d1c', '#0c0c0c'] },
