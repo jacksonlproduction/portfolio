@@ -1,0 +1,14 @@
+# Netlify: publish only the website itself (not the original font files, source photos or notes).
+[build]
+  command = "rm -rf dist && mkdir dist && cp -R index.html work.html assets fonts dist/ && rm -rf dist/fonts/src dist/assets/img/src"
+  publish = "dist"
+
+# Fonts, images and the 3D library rarely change, so browsers can keep them for a while.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+[[headers]]
+  for = "/assets/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
