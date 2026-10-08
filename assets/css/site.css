@@ -905,6 +905,51 @@ body::after {
 .card-tag { left: 12px; }
 .nav-menu { border: 0; }
 
+/* ═════════ Signature intro (intro.js) ═════════
+   Plays inside the hero only: nav and page stay usable, and the reel glows dimly behind it. */
+.intro-on .hero .reveal { animation-play-state: paused; }
+.intro-on .nav-logo { opacity: 0; }
+.nav-logo { transition: opacity .35s; }
+.hero-reel { transition: opacity 1.2s var(--ease-out); }
+.intro-on .hero-reel { opacity: .28; }
+.intro {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  display: grid; place-content: center; justify-items: center; gap: clamp(14px, 2.4vw, 26px);
+}
+.intro-mark {
+  width: clamp(200px, 30vw, 420px); height: auto; overflow: visible;
+  translate: -7.5% 0;   /* the script's swashes overhang its em box to the right */
+  transform-origin: 0 0;
+}
+.intro-ink { fill: #fff; filter: drop-shadow(0 0 18px rgba(255, 255, 255, .28)) drop-shadow(0 0 42px rgba(179, 18, 46, .45)); }
+.intro-tip { fill: #fff; opacity: 0; filter: drop-shadow(0 0 22px rgba(255, 70, 100, .95)) drop-shadow(0 0 60px rgba(179, 18, 46, .9)); transition: opacity .25s; }
+.intro-tip.on { opacity: .9; }
+.intro-slogan {
+  margin: 0; font-size: clamp(11px, 1vw, 14px); font-weight: 500; letter-spacing: .42em; text-transform: uppercase;
+  color: rgba(255, 255, 255, .82); white-space: nowrap; padding-left: .42em;
+}
+.intro-slogan span { display: inline-block; white-space: pre; opacity: 0; filter: blur(6px); transform: translateY(6px); }
+.intro.slogan-in .intro-slogan span { animation: slogan-in .7s var(--ease-out) calc(var(--i) * 28ms) forwards; }
+@keyframes slogan-in { to { opacity: 1; filter: none; transform: none; } }
+.intro.leaving .intro-slogan { opacity: 0; transform: translateY(8px); filter: blur(4px); transition: opacity .45s, transform .45s, filter .45s; }
+.intro.skipped { opacity: 0; transition: opacity .25s; }
+
+/* ═════════ Hover clips (ytloop.js) ═════════ */
+.yt-loop { overflow: hidden; background: #000; opacity: 0; transition: opacity .5s var(--ease-out); pointer-events: none; }
+.yt-loop.live { opacity: 1; }
+.yt-loop iframe { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border: 0; pointer-events: none; }
+/* on the reel: a layer that drifts with the reel as the hero scrolls away */
+.reel-clips { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  transform: translate3d(0, calc(var(--out, 0) * 90px), 0); opacity: calc(1 - var(--out, 0) * .85); }
+.reel-clips .yt-loop { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.reel-clips .yt-loop.vertical { border-radius: 14px; }
+/* on work cards: fills the picture (or the 9:16 phone for Shorts), cropping like object-fit: cover */
+.card-media > .yt-loop, .card-phone > .yt-loop { position: absolute; inset: 0; container-type: size; }
+.card-media > .yt-loop iframe, .card-phone > .yt-loop iframe {
+  width: calc(max(100cqw, 100cqh * 16 / 9) * 1.06); height: calc(max(100cqh, 100cqw * 9 / 16) * 1.06);
+}
+.card-phone > .yt-loop iframe { width: calc(max(100cqw, 100cqh * 9 / 16) * 1.06); height: calc(max(100cqh, 100cqw * 16 / 9) * 1.06); }
+
 @media (prefers-reduced-motion: reduce) {
   .reveal, .hero-glow, .lb-backdrop, .spin-hint.show .sh-inner, .spin-hint.hide .sh-inner, .spin-hint.rest .sh-inner, .lb-panel, .now-showing.swap .ns-title, .now-showing.swap .ns-kind { animation: none; }
   .scribble svg { animation: none; clip-path: none; }

@@ -82,9 +82,28 @@
   });
 
   /* ───────── Preview: hover on desktop, centre-of-screen on touch ───────── */
+  // On desktop, a short rest on a card plays its real video in place: a muted YouTube loop (ytloop.js).
+  const ytHover = canHover && !!window.YTLoop;
+  function startYT(c) {
+    if (!ytHover || c.yt || !c.p.youtube || c.p.preview) return;
+    c.yt = window.YTLoop.create(c.p.youtube);
+    const phone = c.media.querySelector('.card-phone');
+    if (phone && phone.style.display !== 'none') phone.append(c.yt.el);
+    else c.media.insertBefore(c.yt.el, c.media.querySelector('.card-leak'));   // above the thumbnail, under the tags
+  }
+  function stopYT(c) {
+    clearTimeout(c.ytTimer);
+    if (!c.yt) return;
+    const y = c.yt;
+    c.yt = null;
+    y.el.classList.remove('live');
+    setTimeout(() => y.destroy(), 400);
+  }
   function play(c) {
     if (c.li.classList.contains('playing')) return;
     c.li.classList.add('playing');
+    clearTimeout(c.ytTimer);
+    c.ytTimer = setTimeout(() => startYT(c), 350);
     if (c.video) {
       if (!c.video.src) c.video.src = c.p.preview;
       c.video.play().catch(() => {});
@@ -92,6 +111,7 @@
   }
   function stop(c) {
     c.li.classList.remove('playing');
+    stopYT(c);
     if (c.video) c.video.pause();
   }
   if (canHover) {
@@ -108,6 +128,8 @@
     }, { rootMargin: '-42% 0px -42% 0px' });
     cards.forEach(c => io.observe(c.media));
   }
+
+  addEventListener('lightbox:change', e => { if (e.detail.open) cards.forEach(stop); });
 
   /* ───────── Staggered two-column rhythm ───────── */
   function layoutOffsets() {

@@ -16,7 +16,7 @@ Everything that's placeholder lives in a few small files. You never need to touc
 | `youtube` | The video ID from the link: `youtube.com/watch?v=`**`ID`**, `youtu.be/`**`ID`** or `youtube.com/shorts/`**`ID`**. Clicking plays it, and the YouTube thumbnail is used automatically. |
 | `vertical` | `true` for Shorts / 9:16 videos — they get a phone-shaped frame and a tall player. |
 | `poster` | Optional still image instead of the YouTube thumbnail, e.g. `assets/img/projects/kids-for-peace.jpg`. |
-| `preview` | Optional short silent loop (3–6s, ~720p `.mp4`) that plays when someone hovers the card. |
+| `preview` | Optional short silent loop (3–6s, ~720p `.mp4`). Without one, hovering a card (or the front reel frame) on desktop plays the YouTube video itself, muted. |
 | `tint` | Two colours for the backdrop while the thumbnail loads. |
 
 Order in the file = order on the reel and in the grid. With fewer than 9 projects, the reel repeats them around the loop.
@@ -33,6 +33,9 @@ In `index.html`, search for `ABOUT (scrapbook)`.
 - Email: change `hello@jacksonluria.com` in `index.html` (search for it) **and** `CONTACT_EMAIL` at the top of `assets/js/contact.js`.
 - Form: right now "Send it" opens the visitor's email app pre-filled. To get messages straight to your inbox, make a free form at formspree.io and paste its URL into `FORM_ENDPOINT` in `assets/js/contact.js`.
 - Social links (Instagram, TikTok, YouTube) are in the contact section and the phone menu in `index.html`.
+
+## Signature intro
+On a visitor's first page load, "JL" writes itself in the hero with the slogan underneath, then glides into the nav logo. It plays once per visit, and any scroll, click or key press skips it. To change the slogan, search `assets/js/intro.js` for `Every frame, on purpose.` (no numbers: it's not in the script font, but keep it short so it stays on one line).
 
 ## Headline copy
 Hero: search `index.html` for `hit harder`. Work, About and Contact intros are right under each section's heading.

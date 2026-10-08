@@ -20,6 +20,16 @@
   <link rel="stylesheet" href="assets/css/cursor.css">
 </head>
 <body>
+  <script>
+    // Signature intro: once per visit, never with reduced motion or when arriving at a #section.
+    // Safety net: if intro.js never runs, the hero shows anyway after 6s (intro.js cancels this once it starts).
+    try {
+      if (!sessionStorage.getItem('jl-intro') && !location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('intro-on');
+        window.__introSafety = setTimeout(function () { document.documentElement.classList.remove('intro-on'); }, 6000);
+      }
+    } catch (e) {}
+  </script>
 
   <header class="site-nav" id="site-nav">
     <nav class="nav" aria-label="Main">
@@ -286,7 +296,9 @@
 
   <script src="assets/vendor/three-0.149.0.min.js"></script>
   <script src="assets/js/projects.js"></script>
+  <script src="assets/js/ytloop.js"></script>
   <script src="assets/js/lightbox.js"></script>
+  <script src="assets/js/intro.js"></script>
   <script src="assets/js/hero-reel.js"></script>
   <script src="assets/js/work.js"></script>
   <script src="assets/js/scrapbook.js"></script>

@@ -25,6 +25,11 @@
   const HINT_GAPS = [9000, 15000, 24000];   // rests before each comeback; then it stops for good
   let hintState = hint ? 'waiting' : 'gone', hintGoneAt = 0, wiggleStart = 0, hintRound = 0;
   let hintNextAt = performance.now() + (reduce ? 400 : 2300);
+  // wait for the signature intro to hand over before offering the hint
+  if (document.documentElement.classList.contains('intro-on')) {
+    hintNextAt = Infinity;
+    addEventListener('intro:done', () => { if (hintState === 'waiting') hintNextAt = performance.now() + 2600; }, { once: true });
+  }
   function showHint(nowMs) {
     hintState = 'shown';
     hintNextAt = nowMs + HINT_ON;
@@ -386,6 +391,74 @@
     }).catch(() => {});
   }
 
+  /* ───────── Hover clips (desktop only) ─────────
+     Rest the pointer on the front frame and its real video plays on it: a muted YouTube loop
+     (ytloop.js) warped onto the frame's four on-screen corners, so it sits exactly on the film. */
+  const canHoverClip = matchMedia('(hover: hover) and (pointer: fine)').matches && !!window.YTLoop;
+  const clipLayer = canHoverClip ? document.createElement('div') : null;
+  if (clipLayer) { clipLayer.className = 'reel-clips'; clipLayer.setAttribute('aria-hidden', 'true'); canvas.after(clipLayer); }
+  let clip = null, clipFor = -1, dwellFor = -1, dwellSince = 0;
+  const CLIP_DWELL = 450;
+  const corner = new THREE.Vector3();
+  function stopClip() {
+    if (!clip) return;
+    const c = clip;
+    clip = null; clipFor = -1;
+    c.el.classList.remove('live');
+    setTimeout(() => c.destroy(), 400);
+  }
+  function startClip(i) {
+    const p = P[i];
+    clip = window.YTLoop.create(p.youtube);
+    clipFor = i;
+    // Shorts play in the same 9:16 "phone" the frame draws; wide videos cover the whole picture
+    const fy = p.vertical ? 0.84 : 1;
+    const ph = FH * fy, pw = p.vertical ? ph * 9 / 16 : FW;
+    clip.w = pw; clip.h = ph;
+    clip.fx = pw / FW; clip.fy = fy;
+    clip.el.style.width = pw + 'px';
+    clip.el.style.height = ph + 'px';
+    clip.el.classList.toggle('vertical', !!p.vertical);
+    const f = clip.el.querySelector('iframe');
+    const ih = ph * 1.08, iw = p.vertical ? pw * 1.08 : ih * 16 / 9;   // a touch of zoom crops YouTube's edges
+    f.style.width = iw + 'px'; f.style.height = (p.vertical ? ih : ih) + 'px';
+    clipLayer.append(clip.el);
+  }
+  // CSS matrix3d that maps a w×h box onto four screen points (top-left, top-right, bottom-right, bottom-left)
+  function quadMatrix(w, h, q) {
+    const src = [[0, 0], [w, 0], [w, h], [0, h]];
+    const A = [], b = [];
+    for (let k = 0; k < 4; k++) {
+      const [x, y] = src[k], [X, Y] = q[k];
+      A.push([x, y, 1, 0, 0, 0, -X * x, -X * y]); b.push(X);
+      A.push([0, 0, 0, x, y, 1, -Y * x, -Y * y]); b.push(Y);
+    }
+    for (let c = 0; c < 8; c++) {          // Gaussian elimination with partial pivoting
+      let m = c;
+      for (let r = c + 1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[m][c])) m = r;
+      [A[c], A[m]] = [A[m], A[c]]; [b[c], b[m]] = [b[m], b[c]];
+      for (let r = 0; r < 8; r++) {
+        if (r === c) continue;
+        const k = A[r][c] / A[c][c];
+        for (let j = c; j < 8; j++) A[r][j] -= k * A[c][j];
+        b[r] -= k * b[c];
+      }
+    }
+    const v = b.map((x, k) => x / A[k][k]);
+    return [v[0], v[3], 0, v[6], v[1], v[4], 0, v[7], 0, 0, 1, 0, v[2], v[5], 0, 1];
+  }
+  function placeClip() {
+    const f = frames[clipFor];
+    const a = ARC / 2 * clip.fx, y = H_FRAME / 2 * clip.fy, r = R + 0.01;
+    const q = [[-a, y], [a, y], [a, -y], [-a, -y]].map(([th, yy]) => {
+      corner.set(r * Math.sin(th), yy, r * Math.cos(th));
+      f.front.localToWorld(corner);
+      corner.project(camera);
+      return [(corner.x + 1) / 2 * W, (1 - corner.y) / 2 * H];
+    });
+    clip.el.style.transform = `matrix3d(${quadMatrix(clip.w, clip.h, q).map(n => +n.toFixed(6)).join(',')})`;
+  }
+
   /* ───────── Sizing ───────── */
   let W = 0, H = 0, radiusPx = 400;
   function resize() {
@@ -575,6 +648,13 @@
     const fi = frontIndex();
     setNow(fi);
     const settled = Math.abs(target - angle) < 0.02 && !dragging && !wheeling && vel === 0;
+    if (clipLayer) {
+      const want = hovered >= 0 && hovered === fi && settled && !lbOpen && P[hovered].youtube ? hovered : -1;
+      if (want !== dwellFor) { dwellFor = want; dwellSince = nowMs; }
+      if (clip && want !== clipFor) stopClip();
+      if (want >= 0 && !clip && nowMs - dwellSince > CLIP_DWELL) startClip(want);
+      if (clip) placeClip();
+    }
 
     for (const f of frames) {
       const isHover = f.i === hovered;
@@ -610,6 +690,7 @@
   function setRunning(on) {
     if (on === running) return;
     running = on;
+    if (!on && typeof stopClip === 'function') stopClip();
     lastT = 0;
     if (on) raf = requestAnimationFrame(frame);
     else cancelAnimationFrame(raf);
