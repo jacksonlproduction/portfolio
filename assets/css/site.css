@@ -384,7 +384,24 @@ button { font: inherit; color: inherit; }
   gap: clamp(48px, 7vw, 96px) clamp(24px, 4vw, 56px);
   align-items: start;
 }
-.card.offset { margin-top: clamp(60px, 10vw, 150px); }
+/* All work: an even three-up grid (two on tablets, one on phones) */
+.work-grid-all { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(40px, 5vw, 64px) clamp(20px, 2.6vw, 36px); }
+@media (max-width: 1000px) { .work-grid-all { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.work-grid-all .card-title { font-size: clamp(17px, 1.4vw, 20px); }
+.work-all-toggle { display: flex; justify-content: center; }
+.work-all-toggle[hidden] { display: none; }
+.wa-btn { gap: 10px; padding: 14px 24px; font-size: 15px; cursor: pointer; }
+.wa-btn sup { font-size: 10px; opacity: .6; margin-left: -4px; }
+.wa-arrow { display: inline-block; transition: transform .5s var(--ease-out); }
+.wa-btn:hover .wa-arrow { transform: translateY(3px); }
+.wa-btn.open .wa-arrow { transform: rotate(180deg); }
+.work-all { display: grid; gap: clamp(28px, 4vw, 44px); padding-top: clamp(8px, 2vw, 24px); min-width: 0; }
+.work-all-head .work-filters { min-width: 0; max-width: 100%; }
+.work-all[hidden] { display: none; }
+.work-all-head { display: flex; align-items: end; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; min-width: 0; }
+@media (max-width: 640px) { .work-all-head { display: grid; } }
+.work-all-title { margin: 0; font-family: var(--f-wide); font-weight: 800; font-size: clamp(26px, 3.2vw, 44px); letter-spacing: -.05em; line-height: .9; text-transform: uppercase; }
+.work-all-title em { font-family: var(--f-serif); font-weight: 400; font-style: italic; text-transform: none; letter-spacing: -.03em; }
 /* Featured piece: full width at the top of the grid, with its proof point on a glass badge */
 .card.featured { grid-column: 1 / -1; }
 .card.featured .card-media { aspect-ratio: 21 / 9; }
@@ -400,8 +417,7 @@ button { font: inherit; color: inherit; }
 }
 .card-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--crimson); box-shadow: 0 0 10px var(--crimson); }
 @media (max-width: 760px) {
-  .work-grid { grid-template-columns: minmax(0, 1fr); gap: 52px; }
-  .card.offset { margin-top: 0; }
+  .work-grid, .work-grid-all { grid-template-columns: minmax(0, 1fr); gap: 52px; }
 }
 
 .card-link {
@@ -487,42 +503,48 @@ button { font: inherit; color: inherit; }
   gap: clamp(64px, 9vw, 120px);
 }
 
-.about-board {
-  position: relative;
-  margin-bottom: 52px; /* room for the buttons */
-  aspect-ratio: 1 / 1.02;
-  width: min(100%, 700px);
-  justify-self: center;
-  border-radius: 22px;
-  background: radial-gradient(circle, #d9d5d5 1px, transparent 1.3px) 0 0 / 22px 22px;
-  container-type: inline-size;
-  isolation: isolate;
+/* Polaroid fan: the prints overlap in a gentle arc and spread apart when you hover the stack.
+   --k is each print's place from the centre (-2…2) and --k2 its square, for the arc's dip. */
+.about-fan {
+  --w: clamp(150px, 18vw, 240px); --gap: calc(var(--w) * .6); --rot: 6.5deg; --drop: 12px;
+  position: relative; justify-self: center; width: 100%; max-width: 1180px;
+  height: calc(var(--w) * 1.5 + 56px);
 }
-.snap {
-  position: absolute;
-  left: var(--x); top: var(--y); width: var(--w);
-  margin: 0;
-  transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--r) + var(--tilt, 0deg))) scale(var(--s, 1));
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  transition: transform .5s cubic-bezier(.34, 1.4, .64, 1), box-shadow .35s, filter .35s;
+.about-fan:hover, .about-fan:focus-within { --gap: calc(var(--w) * .88); --rot: 2.5deg; --drop: 4px; }
+.about-fan .polaroid {
+  position: absolute; left: 50%; top: 20px; width: var(--w); margin: 0; container-type: inline-size;
+  translate: calc(-50% + var(--k) * var(--gap)) calc(var(--k2) * var(--drop));
+  rotate: calc(var(--k) * var(--rot));
+  z-index: calc(10 - var(--k2));
+  transition: translate .8s cubic-bezier(.2, .8, .2, 1), rotate .8s cubic-bezier(.2, .8, .2, 1), scale .45s var(--ease-out), box-shadow .45s;
 }
-.snap.dragging { cursor: grabbing; transition: box-shadow .35s; --s: 1.05; }
-.snap.settling { transition: transform .9s cubic-bezier(.2, .8, .2, 1); }
+.about-fan .polaroid:hover {
+  z-index: 20; scale: 1.07; rotate: 0deg;
+  translate: calc(-50% + var(--k) * var(--gap)) -16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 34px 60px -22px rgba(0, 0, 0, .5);
+}
+.about-fan .polaroid figcaption { font-size: clamp(13px, 7.4cqi, 19px); }
+.about-fan .stamp { position: absolute; z-index: 30; left: calc(50% + var(--w) * .26); top: 0; width: clamp(64px, 7vw, 92px); rotate: -12deg; pointer-events: none; transition: translate .8s cubic-bezier(.2, .8, .2, 1); }
+/* Phones: a swipeable row instead of a fan */
+@media (max-width: 640px) {
+  .about-fan {
+    --w: 64vw; width: auto; max-width: none; justify-self: stretch; height: auto; display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; box-sizing: border-box;
+    margin-inline: calc(var(--gutter) * -1); padding: 26px calc(50vw - var(--w) / 2) 30px; scrollbar-width: none;
+  }
+  .about-fan::-webkit-scrollbar { display: none; }
+  .about-fan .polaroid, .about-fan .polaroid:hover { position: relative; left: auto; top: auto; flex: 0 0 var(--w); translate: none; rotate: calc(var(--k) * 1.5deg); scale: none; scroll-snap-align: center; z-index: auto; }
+  .about-fan .stamp { left: auto; right: 10%; top: 6px; width: 64px; }
+}
 
 .polaroid {
   background: var(--paper);
   padding: 3% 3% 0; /* thin border so the photo does the talking */
   box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 30px -14px rgba(0, 0, 0, .35);
 }
-.snap.dragging.polaroid, .snap.dragging.ticket { box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 30px 50px -18px rgba(0, 0, 0, .45); }
 .snap-photo {
   position: relative; aspect-ratio: 4 / 5; overflow: hidden;
   background: linear-gradient(150deg, var(--a), var(--b));
 }
-.square .snap-photo { aspect-ratio: 1; }
 .snap-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .snap-photo::after {
   content: ""; position: absolute; inset: 0; opacity: .16; mix-blend-mode: overlay;
@@ -550,51 +572,11 @@ button { font: inherit; color: inherit; }
   clip-path: polygon(2% 0, 98% 4%, 100% 50%, 97% 100%, 3% 96%, 0 50%);
 }
 
-.ticket {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto;
-  background: var(--paper); border: 1.5px solid var(--ink); border-radius: 6px;
-  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, .35);
-  -webkit-mask: radial-gradient(circle at 0 50%, transparent 7px, #000 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #000 7.5px) right / 51% 100% no-repeat;
-          mask: radial-gradient(circle at 0 50%, transparent 7px, #000 7.5px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 50%, transparent 7px, #000 7.5px) right / 51% 100% no-repeat;
-}
-.t-main { display: grid; gap: 1px; padding: 9% 8% 9% 11%; }
-.t-main b { font-family: var(--f-wide); font-weight: 800; font-size: clamp(7px, 1.7cqi, 11px); letter-spacing: .02em; text-transform: uppercase; color: var(--crimson); }
-.t-main i { font-family: var(--f-serif); font-size: clamp(15px, 3.8cqi, 26px); line-height: 1.05; letter-spacing: -.02em; }
-.t-main small { font-size: clamp(6px, 1.45cqi, 10px); color: var(--ink-2); letter-spacing: .02em; }
-.t-stub {
-  display: grid; align-content: center; justify-items: center; padding: 0 26% 0 14%; /* clear of the notch */
-  border-left: 1.5px dashed var(--ink); font-size: clamp(6px, 1.4cqi, 9px); text-transform: uppercase; letter-spacing: .14em; text-align: center; color: var(--ink-2);
-}
-.t-stub b { font-family: var(--f-tall); font-weight: 400; font-size: clamp(14px, 3.4cqi, 24px); letter-spacing: 0; color: var(--ink); line-height: 1; }
-
-.stamp svg, .canister svg { display: block; width: 100%; height: auto; }
+.stamp svg { display: block; width: 100%; height: auto; }
 .stamp { opacity: .9; }
 .st-ring { fill: none; stroke: var(--crimson); stroke-width: 2.4; }
 .st-text { font-family: var(--f-body); font-weight: 600; font-size: 9.5px; letter-spacing: 1.6px; fill: var(--crimson); }
 .st-mid { font-family: var(--f-tall); font-size: 30px; fill: var(--crimson); }
-.canister { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .25)); }
-.cn { fill: var(--ink); }
-.cn-band { fill: var(--paper); }
-.cn-text { font-family: var(--f-wide); font-weight: 800; font-size: 9px; fill: var(--ink); }
-
-.note {
-  margin: 0; padding: 7% 9% 6%;
-  background: var(--paper) repeating-linear-gradient(transparent 0 1.55em, #ece8e8 1.55em calc(1.55em + 1px));
-  box-shadow: 0 10px 22px -14px rgba(0, 0, 0, .35);
-  font-family: var(--f-script); font-size: clamp(13px, 2.7cqi, 19px); line-height: 1.55em; color: var(--ink);
-}
-
-.board-doodles { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 900; overflow: visible; }
-.board-doodles path { fill: none; stroke: var(--crimson); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.doodle-label {
-  position: absolute; left: var(--x); top: var(--y); margin: 0; z-index: 900; pointer-events: none;
-  font-family: var(--f-script); font-size: clamp(14px, 3.4cqi, 22px); color: var(--crimson); rotate: -8deg; white-space: nowrap;
-}
-.board-actions { position: absolute; right: 0; bottom: -52px; z-index: 950; display: flex; gap: 8px; }
-.board-btn {
-  border: 1px solid var(--hair); background: var(--paper); border-radius: 999px;
-  padding: 9px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
-}
 
 .about-copy {
   display: grid; gap: 18px; align-content: start; justify-items: start;
@@ -964,11 +946,6 @@ body::after {
 section[id] { scroll-margin-top: 64px; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
-/* Scrapbook on touch: vertical swipes scroll the page, sideways drags pick pieces up. */
-@media (pointer: coarse) { .snap { touch-action: pan-y; } }
-/* Once the table's been played with, the arrows fade back (they pointed at the original layout). */
-.board-doodles, .doodle-label { transition: opacity .6s; }
-.about-board.touched .board-doodles, .about-board.touched .doodle-label { opacity: .25; }
 
 /* Nav pieces never wrap; the logo shrinks a little on the narrowest phones. */
 .nav-logo, .nav-cta { white-space: nowrap; }

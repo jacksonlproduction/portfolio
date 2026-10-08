@@ -1,20 +1,24 @@
-// Selected work: filterable grid of projects with hover-to-preview cards.
-// Cards come from projects.js. Clicking one opens the shared lightbox.
+// Selected work: your top three up front, and every project behind "See all work" (filterable).
+// Cards come from projects.js and have hover-to-preview. Clicking one opens the shared lightbox.
 (() => {
   const grid = document.getElementById('work-grid');
-  if (!grid) return;
+  const allGrid = document.getElementById('work-all-grid');
+  if (!grid || !allGrid) return;
   const P = window.PROJECTS || [];
+  let TOP = P.filter(p => p.top).slice(0, 3);
+  if (!TOP.length) TOP = P.slice(0, 3);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const canHover = matchMedia('(hover: hover) and (pointer: fine)').matches;
   const pad2 = n => String(n).padStart(2, '0');
   const plural = k => (/^(Social|Drone)$/.test(k) ? k : k + 's');
 
   /* ───────── Build cards ───────── */
-  const cards = P.map((p, i) => {
+  function makeCard(p, into, isTop) {
+    const i = P.indexOf(p);
     const li = document.createElement('li');
     li.className = 'card rv';
     li.dataset.kind = p.kind;
-    if (p.featured) li.classList.add('featured');
+    if (isTop && p.featured) li.classList.add('featured');
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -76,10 +80,13 @@
     media.querySelectorAll('img').forEach(im => im.addEventListener('error', () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; }));
     btn.append(media, meta);
     li.append(btn);
-    grid.append(li);
+    into.append(li);
     btn.addEventListener('click', () => window.Lightbox && window.Lightbox.open(i));
     return { p, i, li, media, video };
-  });
+  }
+  const topCards = TOP.map(p => makeCard(p, grid, true));
+  const cards = P.map(p => makeCard(p, allGrid, false));   // the "All work" grid (filters act on these)
+  const everyCard = topCards.concat(cards);
 
   /* ───────── Preview: hover on desktop, centre-of-screen on touch ───────── */
   // On desktop, a short rest on a card plays its real video in place: a muted YouTube loop (ytloop.js).
@@ -115,35 +122,48 @@
     if (c.video) c.video.pause();
   }
   if (canHover) {
-    cards.forEach(c => {
+    everyCard.forEach(c => {
       c.media.addEventListener('pointerenter', () => play(c));
       c.media.addEventListener('pointerleave', () => stop(c));
     });
   } else if (!reduce) {
     const io = new IntersectionObserver(entries => {
       entries.forEach(e => {
-        const c = cards.find(x => x.media === e.target);
+        const c = everyCard.find(x => x.media === e.target);
         if (c) (e.isIntersecting ? play : stop)(c);
       });
     }, { rootMargin: '-42% 0px -42% 0px' });
-    cards.forEach(c => io.observe(c.media));
+    everyCard.forEach(c => io.observe(c.media));
   }
 
-  addEventListener('lightbox:change', e => { if (e.detail.open) cards.forEach(stop); });
+  addEventListener('lightbox:change', e => { if (e.detail.open) everyCard.forEach(stop); });
 
-  /* ───────── Staggered two-column rhythm ───────── */
-  function layoutOffsets() {
-    let n = 0;
-    cards.forEach(c => {
-      if (c.li.hidden) return;
-      if (c.p.featured) { c.li.classList.remove('offset'); return; }   // full-width, sits outside the two-column rhythm
-      c.li.classList.toggle('offset', n % 2 === 1);
-      c.li.style.setProperty('--rd', `${(n % 2) * 0.12}s`);
-      n++;
-    });
-    return n;
-  }
-  layoutOffsets();
+  // reveal the all-work cards in a gentle left-to-right ripple
+  const rippleDelays = () => { let n = 0; cards.forEach(c => { if (!c.li.hidden) c.li.style.setProperty('--rd', `${(n++ % 3) * 0.08}s`); }); };
+  rippleDelays();
+
+  /* ───────── See all work ───────── */
+  const allBox = document.getElementById('work-all');
+  const allBtn = document.getElementById('work-all-btn');
+  const allLabel = allBtn && allBtn.querySelector('.wa-label');
+  const allCount = document.getElementById('work-all-count');
+  if (allCount) allCount.textContent = P.length;
+  if (allBtn && P.length <= TOP.length) allBtn.closest('.work-all-toggle').hidden = true;
+  if (allBtn) allBtn.addEventListener('click', () => {
+    const open = allBox.hidden;
+    allBox.hidden = !open;
+    allBtn.setAttribute('aria-expanded', String(open));
+    allBtn.classList.toggle('open', open);
+    if (allLabel) allLabel.textContent = open ? 'Show less' : 'See all work';
+    dispatchEvent(new Event('cursor:refresh'));
+    if (open) {
+      if (!reduce) allBox.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      allBox.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    } else {
+      cards.forEach(stop);
+      allBtn.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    }
+  });
 
   /* ───────── Filters ───────── */
   const filters = document.getElementById('work-filters');
@@ -166,7 +186,7 @@
     filters.append(b);
     return b;
   });
-  if (count) count.textContent = P.length;
+  if (count) count.textContent = TOP.length;
   if (kinds.length < 2) filters.hidden = true;   // nothing to filter yet
 
   let current = 'all';
@@ -183,8 +203,7 @@
       if (!show) stop(c);
       c.li.classList.add('in'); // never leave a re-shown card waiting for a scroll reveal
     });
-    const shown = layoutOffsets();
-    if (count) count.textContent = shown;
+    rippleDelays();
     if (reduce) return;
     cards.forEach(c => {
       if (c.li.hidden) return;

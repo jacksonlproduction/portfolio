@@ -103,9 +103,21 @@
         <p class="work-intro rv" style="--rd:.1s">Hype edits, short docs, social and drone. Hover a piece to preview it, click to watch the whole thing.</p>
       </div>
 
-      <div class="work-filters rv" style="--rd:.15s" role="group" aria-label="Filter projects" id="work-filters"></div>
+      <ol class="work-grid work-top" id="work-grid" aria-label="Top picks"></ol>
 
-      <ol class="work-grid" id="work-grid"></ol>
+      <div class="work-all-toggle rv">
+        <button class="pill dark wa-btn" type="button" id="work-all-btn" aria-expanded="false" aria-controls="work-all" data-cursor="link">
+          <span class="wa-label">See all work</span><sup id="work-all-count">10</sup><span class="wa-arrow" aria-hidden="true">&darr;</span>
+        </button>
+      </div>
+
+      <div class="work-all" id="work-all" hidden>
+        <div class="work-all-head">
+          <h3 class="work-all-title">All <em>work</em></h3>
+          <div class="work-filters" role="group" aria-label="Filter projects" id="work-filters"></div>
+        </div>
+        <ol class="work-grid work-grid-all" id="work-all-grid"></ol>
+      </div>
 
       <div class="work-more rv">
         <p>More on <span class="scribble">YouTube<svg viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path d="M1 9.5 C 50 5.5, 130 3.8, 199 4.2 C 199.7 4.3, 199.7 4.9, 199 5 C 130 5.8, 55 9, 3 11.6 C 1.2 11.6, .4 9.8, 1 9.5 Z"/></svg></span> and Instagram.</p>
@@ -113,7 +125,7 @@
       </div>
     </section>
 
-    <!-- ═════════ ABOUT (scrapbook) ═════════ -->
+    <!-- ═════════ ABOUT (photo fan) ═════════ -->
     <section class="about" id="about" aria-labelledby="about-title">
       <div class="about-copy">
         <p class="eyebrow rv">About</p>
@@ -135,66 +147,40 @@
         <a class="pill dark rv" href="#contact" data-cursor="link" data-magnet style="--rd:.25s">Work with me <span aria-hidden="true">&rarr;</span></a>
       </div>
 
-      <div class="about-board rv" id="board" aria-label="Scrapbook of behind-the-scenes and trip photos. Drag the pieces around.">
-        <!-- Photos: drop real images into assets/img/scrapbook/ and add <img src="..." alt="..."> inside .snap-photo -->
-        <figure class="snap polaroid" style="--x:35%;--y:1%;--w:30%;--r:1.5deg;--a:#3b2a22;--b:#0e0b0a">
-          <span class="tape" style="--tr:-8deg"></span>
-          <div class="snap-photo"><span class="ph-label">Portrait</span></div>
-          <figcaption>me, probably holding a gimbal</figcaption>
-        </figure>
-        <figure class="snap polaroid bw" style="--x:2%;--y:4%;--w:30%;--r:-3deg;--a:#2a2a2a;--b:#0a0a0a">
-          <span class="tape" style="--tr:4deg"></span>
-          <div class="snap-photo"><img src="assets/img/scrapbook/vista-muay-thai.jpg" alt="Jackson setting up an interview with a Muay Thai fighter beside the ring in Vista" style="object-position:48% 45%" onerror="this.remove()"></div>
-          <figcaption>muay thai interview <span class="loc">Vista, CA</span></figcaption>
-        </figure>
-        <figure class="snap polaroid bw" style="--x:68%;--y:4%;--w:30%;--r:2.5deg;--a:#2a2a2a;--b:#0a0a0a">
-          <div class="snap-photo"><img src="assets/img/scrapbook/cardiff.jpg" alt="Jackson checking a camera on a tripod with the crew in Cardiff" style="object-position:92% 35%" onerror="this.remove()"></div>
-          <figcaption>camera work in <span class="loc">Cardiff, Wales</span></figcaption>
-        </figure>
-        <figure class="snap polaroid square" style="--x:3%;--y:52%;--w:30%;--r:2deg;--a:#463722;--b:#0c0a07">
+      <div class="about-fan rv" id="fan" role="group" aria-label="Behind-the-scenes and trip photos">
+        <!-- Photos: drop real images into assets/img/scrapbook/ and add <img src="..." alt="..."> inside .snap-photo.
+             --k is the print's place in the fan (-2 left … 2 right) and --k2 its square. -->
+        <figure class="polaroid" style="--k:-2;--k2:4;--a:#463722;--b:#0c0a07">
           <span class="tape" style="--tr:-3deg"></span>
           <div class="snap-photo"><span class="ph-label">Trip</span></div>
           <figcaption>golden hour</figcaption>
         </figure>
-        <figure class="snap polaroid square" style="--x:35.5%;--y:51%;--w:30%;--r:-2deg;--a:#1f2a24;--b:#080908">
+        <figure class="polaroid bw" style="--k:-1;--k2:1;--a:#2a2a2a;--b:#0a0a0a">
+          <div class="snap-photo"><img src="assets/img/scrapbook/vista-muay-thai.jpg" alt="Jackson setting up an interview with a Muay Thai fighter beside the ring in Vista" style="object-position:48% 45%" onerror="this.remove()"></div>
+          <figcaption>muay thai interview <span class="loc">Vista, CA</span></figcaption>
+        </figure>
+        <figure class="polaroid bw" style="--k:0;--k2:0;--a:#2a2a2a;--b:#0a0a0a">
+          <span class="tape" style="--tr:4deg"></span>
+          <div class="snap-photo"><img src="assets/img/scrapbook/cardiff.jpg" alt="Jackson checking a camera on a tripod with the crew in Cardiff" style="object-position:92% 35%" onerror="this.remove()"></div>
+          <figcaption>camera work in <span class="loc">Cardiff, Wales</span></figcaption>
+        </figure>
+        <figure class="polaroid" style="--k:1;--k2:1;--a:#1f2a24;--b:#080908">
           <div class="snap-photo"><span class="ph-label">BTS</span></div>
           <figcaption>first paid shoot</figcaption>
         </figure>
+        <figure class="polaroid" style="--k:2;--k2:4;--a:#3b2a22;--b:#0e0b0a">
+          <span class="tape" style="--tr:-8deg"></span>
+          <div class="snap-photo"><span class="ph-label">Portrait</span></div>
+          <figcaption>me, probably holding a gimbal</figcaption>
+        </figure>
 
-        <div class="snap ticket" style="--x:33.5%;--y:87%;--w:33%;--r:-1.5deg" role="img" aria-label="Ticket stub: State Finals, row A, seat 1">
-          <span class="t-main"><b>Admit one</b><i>State Finals</i><small>Row A · Seat 01 · Sideline pass</small></span>
-          <span class="t-stub">No.<br><b>0042</b></span>
-        </div>
-
-        <div class="snap stamp" style="--x:57%;--y:41%;--w:12%;--r:-10deg" role="img" aria-label="Postmark stamp: Jackson Luria, videographer">
+        <div class="stamp" role="img" aria-label="Postmark stamp: Jackson Luria, videographer">
           <svg viewBox="0 0 120 120" aria-hidden="true">
             <defs><path id="stamp-ring" d="M60 60 m-42 0 a42 42 0 1 1 84 0 a42 42 0 1 1 -84 0"/></defs>
             <circle cx="60" cy="60" r="54" class="st-ring"/><circle cx="60" cy="60" r="31" class="st-ring"/>
             <text class="st-text"><textPath href="#stamp-ring">JACKSON LURIA · VIDEOGRAPHER · EST. 2026 ·</textPath></text>
             <text x="60" y="68" text-anchor="middle" class="st-mid">JL</text>
           </svg>
-        </div>
-
-        <div class="snap canister" style="--x:88%;--y:85%;--w:8%;--r:10deg" role="img" aria-label="Film canister, 500T">
-          <svg viewBox="0 0 60 90" aria-hidden="true">
-            <rect x="14" y="2" width="32" height="8" rx="2" class="cn"/>
-            <rect x="6" y="10" width="48" height="74" rx="6" class="cn"/>
-            <rect x="6" y="30" width="48" height="30" class="cn-band"/>
-            <text x="30" y="50" text-anchor="middle" class="cn-text">500T</text>
-            <rect x="54" y="40" width="6" height="12" rx="1" class="cn"/>
-          </svg>
-        </div>
-
-        <p class="snap note" style="--x:68%;--y:54%;--w:29%;--r:-2.5deg">say yes to the weird shot</p>
-
-        <svg class="board-doodles" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M80 50.5 C 79 48.5, 79 47, 80.2 45" /><path d="M78.7 46 L 80.3 44.8 L 81.4 46.6" />
-        </svg>
-        <p class="doodle-label" style="--x:69%;--y:50%">across the pond</p>
-
-        <div class="board-actions">
-          <button class="board-btn" type="button" id="board-tidy" data-cursor="link" data-magnet>Tidy up</button>
-          <button class="board-btn" type="button" id="board-shuffle" data-cursor="link" data-magnet>Shuffle</button>
         </div>
       </div>
     </section>
@@ -301,7 +287,6 @@
   <script src="assets/js/intro.js"></script>
   <script src="assets/js/hero-reel.js"></script>
   <script src="assets/js/work.js"></script>
-  <script src="assets/js/scrapbook.js"></script>
   <script src="assets/js/contact.js"></script>
   <script src="assets/js/nav.js"></script>
   <script src="assets/js/reveal.js"></script>

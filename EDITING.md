@@ -3,6 +3,8 @@
 Everything that's placeholder lives in a few small files. You never need to touch the animation code.
 
 ## Projects (hero reel + Selected Work)
+Selected Work shows the three projects marked `top: true` (the one marked `featured: true` goes full width), then a "See all work" button opens every project with filters.
+
 `assets/js/projects.js` — one line per project.
 
 | Field | What to put |
@@ -21,13 +23,13 @@ Everything that's placeholder lives in a few small files. You never need to touc
 
 Order in the file = order on the reel and in the grid. With fewer than 9 projects, the reel repeats them around the loop.
 
-## About (scrapbook + bio)
-In `index.html`, search for `ABOUT (scrapbook)`.
+## About (photo fan + bio)
+In `index.html`, search for `about-fan`. The five polaroids sit in a fan that spreads apart on hover (a swipeable row on phones); `--k` on each one is its place in the fan, from `-2` (left) to `2` (right), and `--k2` is that number squared.
 - Photos: put images in `assets/img/scrapbook/` and add `<img src="assets/img/scrapbook/your-photo.jpg" alt="what's in it">` inside a `.snap-photo` div (you can delete the `ph-label` span).
 - The portrait next to the bio is `assets/img/scrapbook/about-me.jpg` (cropped from the original in `assets/img/src/`); search `about-portrait` in `index.html` to change it. Phone photos in HEIC need converting to JPG first; browsers can't show HEIC.
 - Two polaroids are already wired up and waiting for their photos: save them as `assets/img/scrapbook/cardiff.jpg` and `assets/img/scrapbook/vista-muay-thai.jpg`. Polaroids with the `bw` class show the photo in black and white with heavier film grain. Nudge the crop with `object-position` on the `<img>`.
 - Captions are the `<figcaption>` text. Wrap a place name in `<span class="loc">` to set it as a small spaced-out location line. **Don't use numbers in captions** — see the font note below.
-- Bio text, the quick facts (city, year, etc.) and the "Shoots on" kit line are right below the scrapbook.
+- Bio text, the quick facts (city, year, etc.) and the "Shoots on" kit line are just above the photo fan.
 
 ## Contact
 - Email: change `hello@jacksonluria.com` in `index.html` (search for it) **and** `CONTACT_EMAIL` at the top of `assets/js/contact.js`.
