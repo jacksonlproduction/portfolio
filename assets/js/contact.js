@@ -26,68 +26,132 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
     setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1800);
   });
 
-  /* ───────── Form ───────── */
+  /* ───────── Form ─────────
+     Only a name and a way to reach you are required. Drafts are kept in this browser until sent,
+     and "Want one like this?" in the video player pre-fills the form (contact:prefill event or ?like=). */
   const form = document.getElementById('contact-form');
   if (!form) return;
   const status = document.getElementById('cf-status');
   const send = document.getElementById('cf-send');
   const label = send.querySelector('.send-label');
+  const done = document.getElementById('cf-done');
+  const DEFAULT_STATUS = status.textContent;
+  const DRAFT = 'jl-contact-draft';
 
-  const val = id => document.getElementById(id).value.trim();
+  const el = id => document.getElementById(id);
+  const val = id => el(id).value.trim();
   const say = (msg, isError) => {
     status.textContent = msg;
     status.classList.toggle('error', !!isError);
   };
+  const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  const isPhone = v => /^[+()\d\s.-]{7,}$/.test(v) && v.replace(/\D/g, '').length >= 7;
 
+  const RULES = {
+    'cf-name': [v => v.length > 0, 'Add your name so I know who to reply to.'],
+    'cf-email': [v => isEmail(v) || isPhone(v), 'Add an email address or a phone number.'],
+  };
+  function checkField(id) {
+    const [ok, msg] = RULES[id];
+    const good = ok(val(id));
+    const input = el(id);
+    input.closest('.field').classList.toggle('invalid', !good);
+    input.setAttribute('aria-invalid', good ? 'false' : 'true');
+    el(id + '-err').textContent = good ? '' : msg;
+    return good;
+  }
   function validate() {
-    let firstBad = null;
-    const check = (id, ok) => {
-      const input = document.getElementById(id);
-      input.closest('.field').classList.toggle('invalid', !ok);
-      input.setAttribute('aria-invalid', ok ? 'false' : 'true');
-      if (!ok && !firstBad) firstBad = input;
-    };
-    check('cf-name', val('cf-name').length > 0);
-    check('cf-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('cf-email')));
-    check('cf-message', val('cf-message').length > 0);
-    if (firstBad) {
-      const what = firstBad.id === 'cf-email' ? 'a valid email' : firstBad.id === 'cf-name' ? 'your name' : 'a few words about the project';
-      say(`Add ${what} and try again.`, true);
-      firstBad.focus();
-      return false;
-    }
+    const bad = Object.keys(RULES).filter(id => !checkField(id));
+    if (bad.length) { say('Almost there: just fill in the highlighted field' + (bad.length > 1 ? 's' : '') + '.', true); el(bad[0]).focus(); return false; }
     return true;
   }
-
-  form.addEventListener('input', e => {
-    const f = e.target.closest('.field');
-    if (f && f.classList.contains('invalid')) { f.classList.remove('invalid'); say(''); }
+  // check a field when you leave it (only once something's been typed), and clear the error as you fix it
+  Object.keys(RULES).forEach(id => {
+    el(id).addEventListener('blur', () => { if (val(id)) checkField(id); });
+    el(id).addEventListener('input', () => { if (el(id).closest('.field').classList.contains('invalid')) checkField(id); });
   });
 
   function collect() {
     const types = [...form.querySelectorAll('input[name="type"]:checked')].map(i => i.value);
-    const budget = form.querySelector('input[name="budget"]:checked')?.value || '';
+    const contact = val('cf-email');
     return {
       name: val('cf-name'),
-      email: val('cf-email'),
+      email: isEmail(contact) ? contact : '',
+      phone: isEmail(contact) ? '' : contact,
       type: types.join(', '),
-      budget,
+      budget: form.querySelector('input[name="budget"]:checked')?.value || '',
       date: val('cf-date'),
       location: val('cf-location'),
       message: val('cf-message'),
     };
   }
 
+  /* drafts: keep what they've typed if they wander off and come back */
+  function saveDraft() {
+    try {
+      const d = collect();
+      d.contact = val('cf-email');
+      localStorage.setItem(DRAFT, JSON.stringify(d));
+    } catch (e) {}
+  }
+  function restoreDraft() {
+    let d = null;
+    try { d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); } catch (e) {}
+    if (!d) return;
+    if (d.name) el('cf-name').value = d.name;
+    if (d.contact) el('cf-email').value = d.contact;
+    if (d.message) el('cf-message').value = d.message;
+    if (d.date) el('cf-date').value = d.date;
+    if (d.location) el('cf-location').value = d.location;
+    (d.type || '').split(', ').forEach(t => { const i = form.querySelector(`input[name="type"][value="${CSS.escape(t)}"]`); if (i) i.checked = true; });
+    if (d.budget) { const i = form.querySelector(`input[name="budget"][value="${CSS.escape(d.budget)}"]`); if (i) i.checked = true; }
+    if (d.budget || d.date || d.location) el('cf-more').open = true;
+  }
+  const clearDraft = () => { try { localStorage.removeItem(DRAFT); } catch (e) {} };
+  restoreDraft();
+  form.addEventListener('input', saveDraft);
+  form.addEventListener('change', saveDraft);
+
+  /* "Want one like this?" from the video player, on this page or arriving from work.html */
+  function prefill({ title, kind }) {
+    if (kind) {
+      const i = form.querySelector(`input[name="type"][value="${CSS.escape(kind)}"]`);
+      if (i) i.checked = true;
+    }
+    const msg = el('cf-message');
+    if (title && !msg.value.includes(title)) msg.value = `I'd love something like "${title}". ` + msg.value;
+    saveDraft();
+  }
+  addEventListener('contact:prefill', e => prefill(e.detail || {}));
+  const q = new URLSearchParams(location.search);
+  if (q.get('like')) prefill({ title: q.get('like'), kind: q.get('kind') });
+
   function mailtoFallback(d) {
     const lines = [
       d.message, '',
-      `Name: ${d.name}`, `Email: ${d.email}`,
+      `Name: ${d.name}`, d.email && `Email: ${d.email}`, d.phone && `Phone: ${d.phone}`,
       d.type && `Project: ${d.type}`, d.budget && `Budget: ${d.budget}`,
       d.date && `Date: ${d.date}`, d.location && `Where: ${d.location}`,
-    ].filter(x => x !== false && x !== '');
+    ].filter(Boolean);
     const subject = `New project${d.type ? `: ${d.type}` : ''} from ${d.name}`;
     location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
   }
+
+  function showDone(name) {
+    el('cf-done-name').textContent = name.split(' ')[0] || 'thanks';
+    form.hidden = true;
+    done.hidden = false;
+    done.focus({ preventScroll: true });
+  }
+  el('cf-again').addEventListener('click', () => {
+    done.hidden = true;
+    form.hidden = false;
+    form.reset();
+    send.classList.remove('sent');
+    label.textContent = 'Send it';
+    say(DEFAULT_STATUS);
+    el('cf-name').focus();
+  });
 
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -110,13 +174,11 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
         body: JSON.stringify(d),
       });
       if (!res.ok) throw new Error(String(res.status));
-      send.classList.add('sent');
-      label.textContent = 'Sent';
-      say(`Thanks, ${d.name.split(' ')[0]}. I'll get back to you within a day.`);
-      form.reset();
+      clearDraft();
+      showDone(d.name);
     } catch {
       label.textContent = 'Send it';
-      say(`That didn't go through. Try again, or email ${CONTACT_EMAIL}.`, true);
+      say(`That didn't go through. Try again, or DM me on Instagram.`, true);
     } finally {
       send.disabled = false;
     }

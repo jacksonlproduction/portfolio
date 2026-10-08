@@ -205,43 +205,56 @@
             </ul>
           </div>
 
+          <div class="cf-wrap">
           <form class="contact-form rv" id="contact-form" style="--rd:.15s" novalidate>
-            <div class="field-row">
-              <label class="field"><span>Your name</span><input type="text" name="name" id="cf-name" autocomplete="name" required></label>
-              <label class="field"><span>Email</span><input type="email" name="email" id="cf-email" autocomplete="email" required></label>
-            </div>
-
             <fieldset class="field-chips" id="cf-type">
-              <legend>What are we making?</legend>
+              <legend><b>1</b> What do you need? <em>Tap any that fit</em></legend>
               <label><input type="checkbox" name="type" value="Hype edit"><span data-cursor="link">Hype edit</span></label>
               <label><input type="checkbox" name="type" value="Short doc"><span data-cursor="link">Short doc</span></label>
-              <label><input type="checkbox" name="type" value="Social"><span data-cursor="link">Social</span></label>
-              <label><input type="checkbox" name="type" value="Drone"><span data-cursor="link">Drone</span></label>
+              <label><input type="checkbox" name="type" value="Feature"><span data-cursor="link">Feature story</span></label>
+              <label><input type="checkbox" name="type" value="Social"><span data-cursor="link">Social content</span></label>
               <label><input type="checkbox" name="type" value="Event"><span data-cursor="link">Event</span></label>
+              <label><input type="checkbox" name="type" value="Travel edit"><span data-cursor="link">Travel</span></label>
+              <label><input type="checkbox" name="type" value="Drone"><span data-cursor="link">Drone</span></label>
               <label><input type="checkbox" name="type" value="Something else"><span data-cursor="link">Something else</span></label>
             </fieldset>
 
-            <fieldset class="field-chips" id="cf-budget">
-              <legend>Rough budget</legend>
-              <label><input type="radio" name="budget" value="Under $500"><span data-cursor="link">Under $500</span></label>
-              <label><input type="radio" name="budget" value="$500 to $1.5k"><span data-cursor="link">$500–1.5k</span></label>
-              <label><input type="radio" name="budget" value="$1.5k to $5k"><span data-cursor="link">$1.5–5k</span></label>
-              <label><input type="radio" name="budget" value="$5k+"><span data-cursor="link">$5k+</span></label>
-              <label><input type="radio" name="budget" value="Not sure yet"><span data-cursor="link">Not sure yet</span></label>
-            </fieldset>
-
             <div class="field-row">
-              <label class="field"><span>Shoot date <em>(if you know it)</em></span><input type="text" name="date" id="cf-date" placeholder="e.g. late March"></label>
-              <label class="field"><span>Where</span><input type="text" name="location" id="cf-location" placeholder="City or venue"></label>
+              <label class="field"><span><b>2</b> Your name</span><input type="text" name="name" id="cf-name" autocomplete="name" placeholder="First name is fine" required><small class="field-err" id="cf-name-err"></small></label>
+              <label class="field"><span><b>3</b> Email or phone</span><input type="text" name="email" id="cf-email" autocomplete="email" inputmode="email" placeholder="Whatever's easiest to reach you" required><small class="field-err" id="cf-email-err"></small></label>
             </div>
 
-            <label class="field"><span>Tell me about it</span><textarea name="message" id="cf-message" rows="4" required></textarea></label>
+            <label class="field"><span>Anything else? <em>Optional</em></span><textarea name="message" id="cf-message" rows="3" placeholder="What's it for, and when? A sentence or two is plenty."></textarea></label>
+
+            <details class="cf-more" id="cf-more">
+              <summary data-cursor="link"><span class="plus" aria-hidden="true"></span>Add budget, date or location <em>Optional</em></summary>
+              <div class="cf-more-body">
+                <fieldset class="field-chips" id="cf-budget">
+                  <legend>Rough budget</legend>
+                  <label><input type="radio" name="budget" value="Under $500"><span data-cursor="link">Under $500</span></label>
+                  <label><input type="radio" name="budget" value="$500 to $1.5k"><span data-cursor="link">$500–1.5k</span></label>
+                  <label><input type="radio" name="budget" value="$1.5k to $5k"><span data-cursor="link">$1.5–5k</span></label>
+                  <label><input type="radio" name="budget" value="$5k+"><span data-cursor="link">$5k+</span></label>
+                  <label><input type="radio" name="budget" value="Not sure yet"><span data-cursor="link">Not sure yet</span></label>
+                </fieldset>
+                <div class="field-row">
+                  <label class="field"><span>Shoot date</span><input type="text" name="date" id="cf-date" placeholder="e.g. late March"></label>
+                  <label class="field"><span>Where</span><input type="text" name="location" id="cf-location" placeholder="City or venue"></label>
+                </div>
+              </div>
+            </details>
 
             <div class="form-foot">
-              <p class="form-status" id="cf-status" role="status" aria-live="polite"></p>
-              <button type="submit" class="send" id="cf-send" data-cursor="link" data-magnet><span class="dot" aria-hidden="true"></span><span class="send-label">Send it</span></button>
+              <button type="submit" class="send" id="cf-send" data-cursor="link"><span class="dot" aria-hidden="true"></span><span class="send-label">Send it</span></button>
+              <p class="form-status" id="cf-status" role="status" aria-live="polite">I usually reply within a day.</p>
             </div>
           </form>
+          <div class="cf-done" id="cf-done" hidden tabindex="-1">
+            <p class="cf-done-title">Got it, <span id="cf-done-name">thanks</span>.</p>
+            <p class="cf-done-body">Your message is on its way. I'll get back to you within a day. In the meantime, say hi on <a href="https://www.instagram.com/jacksonluria" target="_blank" rel="noopener">Instagram</a>.</p>
+            <button type="button" class="pill" id="cf-again" data-cursor="link">Send another</button>
+          </div>
+          </div>
         </div>
       </div>
 
@@ -267,7 +280,10 @@
           <h2 class="lb-title" id="lb-title"></h2>
           <p class="lb-blurb" id="lb-blurb" hidden></p>
         </div>
-        <button class="lb-close" type="button" data-close data-cursor="link" data-magnet>Close</button>
+        <div class="lb-actions">
+          <button class="lb-cta" type="button" id="lb-cta" data-cursor="link"><span class="dot" aria-hidden="true"></span>Want one like this?</button>
+          <button class="lb-close" type="button" data-close data-cursor="link" data-magnet>Close</button>
+        </div>
       </div>
     </div>
   </div>

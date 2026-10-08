@@ -8,7 +8,8 @@
   const lbTitle = document.getElementById('lb-title');
   const lbKind = document.getElementById('lb-kind');
   const lbBlurb = document.getElementById('lb-blurb');
-  let isOpen = false, lastFocus = null;
+  const lbCta = document.getElementById('lb-cta');
+  let isOpen = false, lastFocus = null, current = null;
 
   function announce() {
     dispatchEvent(new CustomEvent('lightbox:change', { detail: { open: isOpen } }));
@@ -18,6 +19,7 @@
   function open(i) {
     const p = P[i];
     if (!p) return;
+    current = p;
     lbTitle.textContent = p.title;
     lbKind.textContent = window.projectMeta ? window.projectMeta(p) : p.kind;
     if (lbBlurb) { lbBlurb.textContent = p.blurb || ''; lbBlurb.hidden = !p.blurb; }
@@ -58,6 +60,20 @@
   }
 
   lb.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+
+  // "Want one like this?": jump to the contact form with this project's type picked and a note started
+  lbCta?.addEventListener('click', () => {
+    if (!current) return;
+    const detail = { title: current.title, kind: current.kind };
+    const contact = document.getElementById('contact-form');
+    if (contact) {
+      close();
+      dispatchEvent(new CustomEvent('contact:prefill', { detail }));
+      document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      location.href = `index.html?like=${encodeURIComponent(detail.title)}&kind=${encodeURIComponent(detail.kind)}#contact`;
+    }
+  });
   addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   window.Lightbox = { open, close, get isOpen() { return isOpen; } };
