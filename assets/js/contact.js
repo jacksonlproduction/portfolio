@@ -1,9 +1,9 @@
 // Contact: copy-email button and the project form.
 //
-// To receive form messages without an email app opening, create a free form endpoint
-// (for example at formspree.io) and paste its URL below. Until then, "Send it" opens the
-// visitor's email app with everything they filled in, addressed to CONTACT_EMAIL.
-const FORM_ENDPOINT = '';
+// Messages go to Formspree (formspree.io), which forwards them to your inbox; manage the form,
+// spam settings and notification email there. If FORM_ENDPOINT is ever emptied, "Send it" falls
+// back to opening the visitor's email app, addressed to CONTACT_EMAIL.
+const FORM_ENDPOINT = 'https://formspree.io/f/mnpjdbba';
 const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your real address (also in index.html)
 
 (() => {
@@ -139,6 +139,7 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
 
   function showDone(name) {
     el('cf-done-name').textContent = name.split(' ')[0] || 'thanks';
+    say(DEFAULT_STATUS);
     form.hidden = true;
     done.hidden = false;
     done.focus({ preventScroll: true });
@@ -164,21 +165,43 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
       return;
     }
 
+    // Formspree fields: `email` becomes the reply-to (only sent when it's a real address), `_subject`
+    // is the notification's subject line, and `_gotcha` is a hidden honeypot that only bots fill in.
+    const payload = {
+      _subject: `New project${d.type ? `: ${d.type}` : ''} from ${d.name}`,
+      _gotcha: form.querySelector('[name="_gotcha"]')?.value || '',
+      name: d.name,
+      ...(d.email ? { email: d.email } : {}),
+      phone: d.phone,
+      project: d.type,
+      message: d.message,
+      budget: d.budget,
+      date: d.date,
+      location: d.location,
+      page: location.pathname,
+    };
+    Object.keys(payload).forEach(k => { if (payload[k] === '' && k !== '_gotcha') delete payload[k]; });
+
     send.disabled = true;
     label.textContent = 'Sending…';
-    say('');
+    say('Sending…');
     try {
       const res = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(d),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        let msg = '';
+        try { msg = ((await res.json()).errors || []).map(x => x.message).join(' '); } catch (_) {}
+        throw new Error(msg || String(res.status));
+      }
       clearDraft();
       showDone(d.name);
-    } catch {
+    } catch (err) {
       label.textContent = 'Send it';
-      say(`That didn't go through. Try again, or DM me on Instagram.`, true);
+      const detail = err && err.message && !/^\d+$/.test(err.message) && err.message !== 'Failed to fetch' ? ` (${err.message})` : '';
+      say(`That didn't go through${detail}. Try again, or DM me on Instagram @jacksonluria.`, true);
     } finally {
       send.disabled = false;
     }

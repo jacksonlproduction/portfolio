@@ -207,6 +207,8 @@
 
           <div class="cf-wrap">
           <form class="contact-form rv" id="contact-form" style="--rd:.15s" novalidate>
+            <!-- spam trap: hidden from people, bots fill it in and Formspree drops the message -->
+            <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" class="cf-trap">
             <fieldset class="field-chips" id="cf-type">
               <legend><b>1</b> What do you need? <em>Tap any that fit</em></legend>
               <label><input type="checkbox" name="type" value="Hype edit"><span data-cursor="link">Hype edit</span></label>

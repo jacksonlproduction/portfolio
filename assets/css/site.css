@@ -662,6 +662,7 @@ button { font: inherit; color: inherit; }
 /* Form */
 .contact-form { display: grid; gap: 30px; }
 .contact-form[hidden], .cf-done[hidden] { display: none; }
+.cf-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .field-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
 @media (max-width: 560px) { .field-row { grid-template-columns: minmax(0, 1fr); } }
 .field { display: grid; gap: 6px; min-width: 0; }
