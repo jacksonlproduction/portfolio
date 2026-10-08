@@ -642,11 +642,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 900px) { .contact-grid { grid-template-columns: minmax(0, 1fr); } }
 .contact-side { display: grid; gap: 34px; }
 .contact-lede { margin: 0; font-size: clamp(18px, 1.6vw, 22px); letter-spacing: -.02em; line-height: 1.4; max-width: 30ch; color: rgba(255, 255, 255, .86); }
-.contact-email { display: grid; gap: 6px; }
-.ce-label { font-size: 12px; color: var(--night-3); }
-.ce-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.ce-row a { font-size: clamp(20px, 2vw, 26px); font-weight: 500; letter-spacing: -.03em; text-decoration: none; overflow-wrap: anywhere; }
-.ce-copy { border: 1px solid rgba(255, 255, 255, .22); background: none; border-radius: 999px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; }
+.socials-label { margin: 0 0 -18px; font-size: 12px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--night-3); }
 .socials { list-style: none; margin: 0; padding: 0; display: grid; }
 .socials a {
   display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 14px;
@@ -840,21 +836,21 @@ body::after {
    a soft inner glow and a specular sheen that follows the pointer (glass.js sets --gx/--gy).
    Backdrop blur is only used where there's imagery behind (nav capsule, reel counter, card tags);
    elsewhere the layered highlights carry the look without the repaint cost. */
-.nav-cta, .nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .ce-copy, .field-chips span,
+.nav-cta, .nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .field-chips span,
 .chip, .board-btn, .pill:not(.dark) {
   position: relative; isolation: isolate;
 }
 .nav-cta::after, .nav-menu::after, .now-showing::after, .card-tag::after, .card-len::after, .lb-close::after,
-.ce-copy::after, .field-chips span::after, .chip::after, .board-btn::after, .pill:not(.dark)::after,
+.field-chips span::after, .chip::after, .board-btn::after, .pill:not(.dark)::after,
 .site-nav.solid-dark .nav::after, .site-nav.on-light .nav::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1;
   background: radial-gradient(140px circle at var(--gx, 28%) var(--gy, -10%), rgba(255, 255, 255, .42), transparent 62%);
   opacity: .75; transition: opacity .4s;
 }
-:is(.nav-cta, .nav-menu, .lb-close, .ce-copy, .field-chips span, .chip, .board-btn, .pill):hover::after { opacity: 1; }
+:is(.nav-cta, .nav-menu, .lb-close, .field-chips span, .chip, .board-btn, .pill):hover::after { opacity: 1; }
 
 /* Clear glass (on dark) */
-.nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .ce-copy, .field-chips span,
+.nav-menu, .now-showing, .card-tag, .card-len, .lb-close, .field-chips span,
 .site-nav.solid-dark .nav, .site-nav:not(.on-light) .nav-cta {
   border: 0;
   background: linear-gradient(160deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .04) 48%, rgba(255, 255, 255, .09));

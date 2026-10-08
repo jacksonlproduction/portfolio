@@ -1,7 +1,7 @@
 // Liquid Glass: the specular sheen on glass controls follows the pointer.
 (() => {
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  const SEL = '.nav-cta, .nav-menu, .now-showing, .lb-close, .ce-copy, .field-chips span, .chip, .board-btn, .pill, .site-nav .nav';
+  const SEL = '.nav-cta, .nav-menu, .now-showing, .lb-close, .field-chips span, .chip, .board-btn, .pill, .site-nav .nav';
   let raf = 0, ev = null, lit = null;
   addEventListener('pointermove', e => { ev = e; if (!raf) raf = requestAnimationFrame(update); }, { passive: true });
   function update() {

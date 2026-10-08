@@ -1,30 +1,10 @@
-// Contact: copy-email button and the project form.
-//
-// Messages go to Formspree (formspree.io), which forwards them to your inbox; manage the form,
-// spam settings and notification email there. If FORM_ENDPOINT is ever emptied, "Send it" falls
-// back to opening the visitor's email app, addressed to CONTACT_EMAIL.
+// Contact: the project form is the only way in. Messages go to Formspree (formspree.io), which
+// forwards them to the inbox on your Formspree account; manage the form and spam settings there.
 const FORM_ENDPOINT = 'https://formspree.io/f/mnpjdbba';
-const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your real address (also in index.html)
 
 (() => {
   const year = document.getElementById('year');
   if (year) year.textContent = new Date().getFullYear();
-
-  /* ───────── Copy email ───────── */
-  const copyBtn = document.getElementById('copy-email');
-  copyBtn?.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(CONTACT_EMAIL);
-      copyBtn.textContent = 'Copied';
-    } catch {
-      // Clipboard blocked: select the address so it can be copied by hand.
-      const a = document.getElementById('contact-email');
-      const r = document.createRange(); r.selectNodeContents(a);
-      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
-      copyBtn.textContent = 'Selected';
-    }
-    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1800);
-  });
 
   /* ───────── Form ─────────
      Only a name and a way to reach you are required. Drafts are kept in this browser until sent,
@@ -126,17 +106,6 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
   const q = new URLSearchParams(location.search);
   if (q.get('like')) prefill({ title: q.get('like'), kind: q.get('kind') });
 
-  function mailtoFallback(d) {
-    const lines = [
-      d.message, '',
-      `Name: ${d.name}`, d.email && `Email: ${d.email}`, d.phone && `Phone: ${d.phone}`,
-      d.type && `Project: ${d.type}`, d.budget && `Budget: ${d.budget}`,
-      d.date && `Date: ${d.date}`, d.location && `Where: ${d.location}`,
-    ].filter(Boolean);
-    const subject = `New project${d.type ? `: ${d.type}` : ''} from ${d.name}`;
-    location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n'))}`;
-  }
-
   function showDone(name) {
     el('cf-done-name').textContent = name.split(' ')[0] || 'thanks';
     say(DEFAULT_STATUS);
@@ -158,12 +127,6 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
     e.preventDefault();
     if (!validate()) return;
     const d = collect();
-
-    if (!FORM_ENDPOINT) {
-      mailtoFallback(d);
-      say('Your email app should open with everything filled in. If it didn\'t, email ' + CONTACT_EMAIL + '.');
-      return;
-    }
 
     // Formspree fields: `email` becomes the reply-to (only sent when it's a real address), `_subject`
     // is the notification's subject line, and `_gotcha` is a hidden honeypot that only bots fill in.
@@ -201,7 +164,7 @@ const CONTACT_EMAIL = 'hello@jacksonluria.com'; // placeholder: change to your r
     } catch (err) {
       label.textContent = 'Send it';
       const detail = err && err.message && !/^\d+$/.test(err.message) && err.message !== 'Failed to fetch' ? ` (${err.message})` : '';
-      say(`That didn't go through${detail}. Try again, or DM me on Instagram @jacksonluria.`, true);
+      say(`That didn't go through${detail}. Check your connection and try again in a moment.`, true);
     } finally {
       send.disabled = false;
     }
