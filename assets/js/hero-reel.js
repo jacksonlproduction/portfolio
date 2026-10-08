@@ -322,7 +322,16 @@
     g.font = '500 17px Poppins, sans-serif';
     g.fillText(pad2(p._i + 1), 28, 42);
     g.textAlign = 'right';
-    if (p.length) g.fillText(p.length, W - 28, 42);
+    if (p.stat) {
+      g.font = '600 15px Poppins, sans-serif';
+      g.fillStyle = '#fff';
+      g.fillText(p.stat.toUpperCase(), W - 28, 42);
+      const tw = g.measureText(p.stat.toUpperCase()).width;
+      g.fillStyle = '#e0234a';
+      g.beginPath(); g.arc(W - 28 - tw - 12, 37, 4, 0, Math.PI * 2); g.fill();
+      g.font = '500 17px Poppins, sans-serif';
+      g.fillStyle = 'rgba(255,255,255,.6)';
+    } else if (p.length) g.fillText(p.length, W - 28, 42);
     g.textAlign = 'left';
     const fit = fitTitle(g, p.title, W - 56);
     g.font = `800 ${fit.size}px "Akira Expanded", "Arial Black", sans-serif`;

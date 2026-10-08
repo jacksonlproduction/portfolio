@@ -8,6 +8,8 @@ Everything that's placeholder lives in a few small files. You never need to touc
 | Field | What to put |
 | --- | --- |
 | `title`, `kind` | Shown on the reel frames, cards and player. `kind` also creates the filter chips (they appear once there are two or more kinds). |
+| `featured` | `true` puts it first as a full-width card. Use it on one project at a time. |
+| `stat` | Optional proof point, e.g. `160K views on TikTok`. Shows as a badge on the card, on the reel frame and in the player. |
 | `blurb` | Optional. A one-line pitch shown under the title in the video player. |
 | `client` | Optional. Who it was for, shown next to the kind, e.g. "Carlsbad High Football · Hype edit". |
 | `year`, `length` | Optional. Leave them `''` and they're hidden. |

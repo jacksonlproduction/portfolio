@@ -14,6 +14,7 @@
     const li = document.createElement('li');
     li.className = 'card rv';
     li.dataset.kind = p.kind;
+    if (p.featured) li.classList.add('featured');
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -32,6 +33,12 @@
       '<span class="card-progress"><i></i></span>';
     media.querySelector('.card-len').textContent = p.length || '';
     media.querySelector('.card-num').textContent = pad2(i + 1);
+    if (p.stat) {
+      const badge = document.createElement('span');
+      badge.className = 'card-badge';
+      badge.textContent = p.stat;
+      media.append(badge);
+    }
 
     const thumb = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
     if (thumb && p.vertical) {
@@ -107,6 +114,7 @@
     let n = 0;
     cards.forEach(c => {
       if (c.li.hidden) return;
+      if (c.p.featured) { c.li.classList.remove('offset'); return; }   // full-width, sits outside the two-column rhythm
       c.li.classList.toggle('offset', n % 2 === 1);
       c.li.style.setProperty('--rd', `${(n % 2) * 0.12}s`);
       n++;
