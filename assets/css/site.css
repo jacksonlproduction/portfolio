@@ -537,7 +537,7 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 34px 60px -22px rgba(0, 0, 0, .5);
 }
 .about-fan .polaroid figcaption { font-size: clamp(13px, 7.4cqi, 19px); }
-.about-fan .stamp { position: absolute; z-index: 30; left: calc(50% + var(--w) * .26); top: 0; width: clamp(64px, 7vw, 92px); rotate: -12deg; pointer-events: none; transition: translate .8s cubic-bezier(.2, .8, .2, 1); }
+.about-fan .stamp { position: absolute; z-index: 30; left: calc(50% + var(--w) * .78); top: 0; width: clamp(64px, 7vw, 92px); rotate: -12deg; pointer-events: none; transition: translate .8s cubic-bezier(.2, .8, .2, 1); }
 /* Phones: a swipeable row instead of a fan */
 @media (max-width: 640px) {
   .about-fan {
