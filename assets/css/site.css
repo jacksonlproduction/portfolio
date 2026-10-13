@@ -646,20 +646,13 @@ button { font: inherit; color: inherit; }
 
 .contact-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
 @media (max-width: 900px) { .contact-grid { grid-template-columns: minmax(0, 1fr); } }
-.contact-side { display: grid; gap: 34px; }
-.contact-lede { margin: 0; font-size: clamp(18px, 1.6vw, 22px); letter-spacing: -.02em; line-height: 1.4; max-width: 30ch; color: rgba(255, 255, 255, .86); }
-.socials-label { margin: 0 0 -18px; font-size: 12px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--night-3); }
-.socials { list-style: none; margin: 0; padding: 0; display: grid; }
-.socials a {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 14px;
-  padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .14); text-decoration: none;
-}
-.socials li:last-child a { border-bottom: 1px solid rgba(255, 255, 255, .14); }
-.socials span { font-size: clamp(22px, 2.4vw, 32px); font-weight: 500; letter-spacing: -.04em; transition: transform .5s var(--ease-out); }
-.socials i { font-family: var(--f-serif); font-size: 17px; color: var(--night-2); }
-.socials b { font-weight: 400; font-size: 18px; transition: transform .5s var(--ease-out), color .3s; }
-.socials a:hover span { transform: translateX(10px); }
-.socials a:hover b { transform: translate(3px, -3px); color: var(--crimson); }
+.contact-side { display: grid; gap: 22px; align-content: start; }
+.contact-lede { margin: 0; font-size: clamp(18px, 1.6vw, 22px); letter-spacing: -.02em; line-height: 1.4; max-width: 26ch; color: rgba(255, 255, 255, .86); }
+/* socials: a quiet row of links, for following the work rather than getting in touch */
+.socials-inline { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; }
+.socials-inline a { color: var(--night-2); text-decoration: none; transition: color .3s; }
+.socials-inline a::after { content: " \2197"; font-size: .85em; }
+.socials-inline a:hover { color: #fff; }
 
 /* Form */
 .contact-form { display: grid; gap: 30px; }
@@ -670,12 +663,6 @@ button { font: inherit; color: inherit; }
 .field { display: grid; gap: 6px; min-width: 0; }
 .field > span { font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, .78); letter-spacing: -.01em; }
 .field em, .field-chips legend em, .cf-more summary em { font-style: normal; font-weight: 400; color: var(--night-3); margin-left: 6px; }
-/* step numbers: small glass coins */
-.field > span b, .field-chips legend b {
-  display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%;
-  font-size: 11px; font-weight: 600; color: #fff; vertical-align: 1px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .06)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 0 0 1px rgba(255, 255, 255, .14);
-}
 .field-err { min-height: 0; font-size: 13px; color: #ff6b81; }
 .field-err:empty { display: none; }
 .field input, .field textarea {

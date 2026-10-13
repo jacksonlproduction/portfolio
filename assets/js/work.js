@@ -45,21 +45,26 @@
       media.append(badge);
     }
 
-    const thumb = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
-    if (thumb && p.vertical) {
+    const thumbs = window.thumbSources ? window.thumbSources(p) : [];
+    // if no thumbnail loads, hide it and let the tinted backdrop show instead of a broken image
+    const hide = im => () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; };
+    if (thumbs.length && p.vertical) {
       // Shorts: blurred thumbnail fills the card, the vertical frame stands in the middle like a phone
       media.classList.add('vertical');
       const bg = document.createElement('img');
-      bg.src = thumb; bg.alt = ''; bg.loading = 'lazy'; bg.className = 'card-bg';
+      bg.alt = ''; bg.loading = 'lazy'; bg.className = 'card-bg';
       const phone = document.createElement('span'); phone.className = 'card-phone';
       const fg = document.createElement('img');
-      fg.src = thumb; fg.alt = ''; fg.loading = 'lazy';
+      fg.alt = ''; fg.loading = 'lazy';
       phone.append(fg);
       media.prepend(bg, phone);
-    } else if (thumb) {
+      window.loadThumb(bg, thumbs, hide(bg));
+      window.loadThumb(fg, thumbs, hide(fg));
+    } else if (thumbs.length) {
       const img = document.createElement('img');
-      img.src = thumb; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+      img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
       media.prepend(img);
+      window.loadThumb(img, thumbs, hide(img));
     }
     let video = null;
     if (p.preview) {
@@ -77,8 +82,6 @@
     meta.querySelector('.card-year').textContent = p.year || '';
     meta.querySelector('.card-kind').textContent = window.projectMeta ? window.projectMeta(p, ['client', 'kind']) : p.kind;
 
-    // if a thumbnail can't load, hide it and let the tinted backdrop show instead of a broken image
-    media.querySelectorAll('img').forEach(im => im.addEventListener('error', () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; }));
     btn.append(media, meta);
     li.append(btn);
     into.append(li);

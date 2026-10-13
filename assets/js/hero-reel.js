@@ -249,12 +249,12 @@
     pivot.add(lift);
     spin.add(pivot);
     const f = { p, i, c, g: c.getContext('2d'), tex, front, lift, pop: 0, play: 0, dim: 1, img: null, bg: null, fg: null, lastDraw: 0 };
-    const src = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
-    if (src) {
+    const thumbs = window.thumbSources ? window.thumbSources(p) : [];
+    if (thumbs.length) {
       const im = new Image();
       im.crossOrigin = 'anonymous';
-      im.onload = () => { f.img = im; bake(f); draw(f, performance.now() / 1000); };
-      im.src = src;
+      im.addEventListener('load', () => { if (im.naturalWidth > 120) { f.img = im; bake(f); draw(f, performance.now() / 1000); } });
+      window.loadThumb(im, thumbs);
     }
     return f;
   });
