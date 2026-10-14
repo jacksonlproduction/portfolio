@@ -51,9 +51,9 @@ button { font: inherit; color: inherit; }
 /* The hero scrolls away normally; as it leaves, its contents drift and fade (see --out in hero-reel.js). */
 .hero {
   position: relative;
-  height: 100svh;
-  min-height: 640px;
-  max-height: 1100px;
+  height: 116svh;   /* a little taller than the screen so the whole reel fits before the white section */
+  min-height: 700px;
+  max-height: 1240px;
   background: var(--night);
   color: #fff;
   overflow: hidden;
@@ -63,6 +63,7 @@ button { font: inherit; color: inherit; }
   padding-inline: var(--gutter);
   padding-block: calc(max(20px, env(safe-area-inset-top)) + 64px) max(22px, env(safe-area-inset-bottom));
 }
+@media (max-width: 640px) { .hero { height: 100svh; min-height: 640px; } }   /* phones: the reel is a wide band, so one screen is enough */
 
 .hero-glow, .hero-glow-boost {
   position: absolute;
@@ -93,7 +94,12 @@ button { font: inherit; color: inherit; }
 @keyframes glow-in { from { opacity: 0; } }
 
 /* Scroll-out transition: the reel sinks a little slower than the page and the copy lifts away. */
-.hero-reel { transform: translate3d(0, calc(var(--out, 0) * 90px), 0); opacity: calc(1 - var(--out, 0) * .85); }
+.hero-reel { transform: translate3d(0, calc(var(--out, 0) * -70px), 0); opacity: calc(1 - var(--out, 0) * .85); }
+/* the reel fades into the dark at the bottom of the hero instead of ending on a hard line */
+.hero::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: clamp(90px, 14vh, 160px); z-index: 0; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(5, 5, 5, 0), rgba(5, 5, 5, .75) 60%, var(--night));
+}
 .hero-copy { transform: translate3d(0, calc(var(--out, 0) * -50px), 0); opacity: calc(1 - var(--out, 0) * 1.4); filter: blur(calc(var(--out, 0) * 6px)); }
 .hero-foot { opacity: calc(1 - var(--out, 0) * 2); }
 .hero-glow { opacity: calc(1 - var(--out, 0) * .7); }
@@ -531,7 +537,7 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 2px 4px rgba(0, 0, 0, .08), 0 34px 60px -22px rgba(0, 0, 0, .5);
 }
 .about-fan .polaroid figcaption { font-size: clamp(13px, 7.4cqi, 19px); }
-.about-fan .stamp { position: absolute; z-index: 30; left: calc(50% + var(--w) * .26); top: 0; width: clamp(64px, 7vw, 92px); rotate: -12deg; pointer-events: none; transition: translate .8s cubic-bezier(.2, .8, .2, 1); }
+.about-fan .stamp { position: absolute; z-index: 30; left: calc(50% + var(--w) * .78); top: 0; width: clamp(64px, 7vw, 92px); rotate: -12deg; pointer-events: none; transition: translate .8s cubic-bezier(.2, .8, .2, 1); }
 /* Phones: a swipeable row instead of a fan */
 @media (max-width: 640px) {
   .about-fan {
@@ -640,20 +646,13 @@ button { font: inherit; color: inherit; }
 
 .contact-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(40px, 6vw, 96px); align-items: start; }
 @media (max-width: 900px) { .contact-grid { grid-template-columns: minmax(0, 1fr); } }
-.contact-side { display: grid; gap: 34px; }
-.contact-lede { margin: 0; font-size: clamp(18px, 1.6vw, 22px); letter-spacing: -.02em; line-height: 1.4; max-width: 30ch; color: rgba(255, 255, 255, .86); }
-.socials-label { margin: 0 0 -18px; font-size: 12px; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; color: var(--night-3); }
-.socials { list-style: none; margin: 0; padding: 0; display: grid; }
-.socials a {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 14px;
-  padding-block: 16px; border-top: 1px solid rgba(255, 255, 255, .14); text-decoration: none;
-}
-.socials li:last-child a { border-bottom: 1px solid rgba(255, 255, 255, .14); }
-.socials span { font-size: clamp(22px, 2.4vw, 32px); font-weight: 500; letter-spacing: -.04em; transition: transform .5s var(--ease-out); }
-.socials i { font-family: var(--f-serif); font-size: 17px; color: var(--night-2); }
-.socials b { font-weight: 400; font-size: 18px; transition: transform .5s var(--ease-out), color .3s; }
-.socials a:hover span { transform: translateX(10px); }
-.socials a:hover b { transform: translate(3px, -3px); color: var(--crimson); }
+.contact-side { display: grid; gap: 22px; align-content: start; }
+.contact-lede { margin: 0; font-size: clamp(18px, 1.6vw, 22px); letter-spacing: -.02em; line-height: 1.4; max-width: 26ch; color: rgba(255, 255, 255, .86); }
+/* socials: a quiet row of links, for following the work rather than getting in touch */
+.socials-inline { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; }
+.socials-inline a { color: var(--night-2); text-decoration: none; transition: color .3s; }
+.socials-inline a::after { content: " \2197"; font-size: .85em; }
+.socials-inline a:hover { color: #fff; }
 
 /* Form */
 .contact-form { display: grid; gap: 30px; }
@@ -664,12 +663,6 @@ button { font: inherit; color: inherit; }
 .field { display: grid; gap: 6px; min-width: 0; }
 .field > span { font-size: 14px; font-weight: 500; color: rgba(255, 255, 255, .78); letter-spacing: -.01em; }
 .field em, .field-chips legend em, .cf-more summary em { font-style: normal; font-weight: 400; color: var(--night-3); margin-left: 6px; }
-/* step numbers: small glass coins */
-.field > span b, .field-chips legend b {
-  display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%;
-  font-size: 11px; font-weight: 600; color: #fff; vertical-align: 1px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .06)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 0 0 1px rgba(255, 255, 255, .14);
-}
 .field-err { min-height: 0; font-size: 13px; color: #ff6b81; }
 .field-err:empty { display: none; }
 .field input, .field textarea {
@@ -694,6 +687,11 @@ button { font: inherit; color: inherit; }
 }
 .field-chips input:checked + span { background: #fff; color: var(--ink); border-color: #fff; }
 .field-chips input:focus-visible + span { outline: 2px solid var(--crimson); outline-offset: 3px; }
+/* "What do you need?": five light outline pills on one line, no glass */
+.cf-type { gap: 8px; }
+.field-chips.cf-type span { padding: 8px 15px 9px; font-size: 14px; background: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+.field-chips.cf-type span::after { display: none; }
+.field-chips.cf-type input:checked + span { background: #fff; color: var(--ink); box-shadow: none; }
 .form-foot { display: flex; align-items: center; gap: 14px 22px; flex-wrap: wrap; }
 @media (max-width: 560px) { .form-foot .send { width: 100%; justify-content: center; } }
 /* optional details, folded away */
@@ -957,7 +955,7 @@ body::after {
 .yt-loop iframe { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border: 0; pointer-events: none; }
 /* on the reel: a layer that drifts with the reel as the hero scrolls away */
 .reel-clips { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-  transform: translate3d(0, calc(var(--out, 0) * 90px), 0); opacity: calc(1 - var(--out, 0) * .85); }
+  transform: translate3d(0, calc(var(--out, 0) * -70px), 0); opacity: calc(1 - var(--out, 0) * .85); }
 .reel-clips .yt-loop { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .reel-clips .yt-loop.vertical { border-radius: 14px; }
 /* on work cards: fills the picture (or the 9:16 phone for Shorts), cropping like object-fit: cover */
@@ -985,3 +983,12 @@ section[id] { scroll-margin-top: 64px; }
 /* Nav pieces never wrap; the logo shrinks a little on the narrowest phones. */
 .nav-logo, .nav-cta { white-space: nowrap; }
 @media (max-width: 380px) { .nav-logo { font-size: 22px; } .nav-cta .dot { display: none; } }
+
+/* Device-specific wording (hover/click on desktop, hold/tap on touch) */
+.on-touch { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .on-hover { display: none; }
+  .on-touch { display: inline; }
+  /* press-and-hold previews: no iOS callout or text selection under the finger */
+  .card-media { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+}

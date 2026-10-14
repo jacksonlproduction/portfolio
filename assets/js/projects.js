@@ -26,3 +26,17 @@ window.PROJECTS = [
 
 // "Carlsbad High Football · Hype edit · 2026 · 0:42" with any blank parts left out.
 window.projectMeta = (p, parts = ['client', 'kind', 'stat', 'year', 'length']) => parts.map(k => p[k]).filter(Boolean).join(' · ');
+
+// Thumbnails, best first: your own poster if set, else YouTube's HD frame (1280×720), falling back to
+// smaller sizes for videos that don't have one. YouTube's "missing" image is a tiny 120×90 grey frame.
+window.thumbSources = p => p.poster ? [p.poster]
+  : p.youtube ? ['maxresdefault', 'sddefault', 'hqdefault'].map(n => `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/${n}.jpg`)
+  : [];
+// Load the first source that works into `img`; calls onFail() if none do.
+window.loadThumb = (img, sources, onFail) => {
+  let k = 0;
+  const next = () => { if (k < sources.length) img.src = sources[k++]; else if (onFail) onFail(); };
+  img.addEventListener('load', () => { if (img.naturalWidth <= 120 && k < sources.length) next(); });
+  img.addEventListener('error', next);
+  next();
+};
