@@ -687,6 +687,11 @@ button { font: inherit; color: inherit; }
 }
 .field-chips input:checked + span { background: #fff; color: var(--ink); border-color: #fff; }
 .field-chips input:focus-visible + span { outline: 2px solid var(--crimson); outline-offset: 3px; }
+/* "What do you need?": five light outline pills on one line, no glass */
+.cf-type { gap: 8px; }
+.field-chips.cf-type span { padding: 8px 15px 9px; font-size: 14px; background: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+.field-chips.cf-type span::after { display: none; }
+.field-chips.cf-type input:checked + span { background: #fff; color: var(--ink); box-shadow: none; }
 .form-foot { display: flex; align-items: center; gap: 14px 22px; flex-wrap: wrap; }
 @media (max-width: 560px) { .form-foot .send { width: 100%; justify-content: center; } }
 /* optional details, folded away */
