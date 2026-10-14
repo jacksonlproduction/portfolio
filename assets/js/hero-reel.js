@@ -510,7 +510,14 @@
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     if (e.pointerType === 'mouse') dismissHint();   // on touch, wait to see if it's a drag/tap or a page scroll
-    pressed = hovered;   // remember which frame was under the pointer when the press started
+    // remember which frame is under the finger/pointer as the press starts. Touch has no hover beforehand,
+    // so find the frame right here rather than relying on the last hover.
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    camera.updateMatrixWorld();
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(hitTargets, false)[0];
+    pressed = hit ? hit.object.userData.index : -1;
     dragging = true; moved = 0; vel = 0; carry = 0;
     dragAngle = angle;
     isTouch = e.pointerType !== 'mouse';
