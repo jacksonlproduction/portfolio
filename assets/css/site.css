@@ -983,3 +983,12 @@ section[id] { scroll-margin-top: 64px; }
 /* Nav pieces never wrap; the logo shrinks a little on the narrowest phones. */
 .nav-logo, .nav-cta { white-space: nowrap; }
 @media (max-width: 380px) { .nav-logo { font-size: 22px; } .nav-cta .dot { display: none; } }
+
+/* Device-specific wording (hover/click on desktop, hold/tap on touch) */
+.on-touch { display: none; }
+@media (hover: none), (pointer: coarse) {
+  .on-hover { display: none; }
+  .on-touch { display: inline; }
+  /* press-and-hold previews: no iOS callout or text selection under the finger */
+  .card-media { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+}
