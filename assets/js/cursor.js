@@ -57,7 +57,16 @@
     }
   }
 
+  // The animation loop sleeps once the pointer has been still for a moment, and wakes on any activity.
+  let awake = false, lastActivity = 0;
+  function wake() {
+    lastActivity = performance.now();
+    if (!awake) { awake = true; lastT = 0; requestAnimationFrame(tick); }
+  }
+  ['pointerdown', 'pointerup', 'scroll', 'wheel', 'cursor:refresh'].forEach(t => addEventListener(t, wake, { passive: true }));
+
   addEventListener('pointermove', e => {
+    wake();
     mx = e.clientX; my = e.clientY;
     cur.classList.remove('hidden');
     evaluate(e.target);
@@ -142,7 +151,8 @@
     tag.style.filter = tb > 0.15 ? `blur(${tb.toFixed(2)}px)` : '';
     tagT.style.opacity = clamp((A - 0.45) / 0.45, 0, 1).toFixed(3);
 
-    requestAnimationFrame(tick);
+    if (now - lastActivity < 1500) requestAnimationFrame(tick);
+    else awake = false;
   }
-  requestAnimationFrame(tick);
+  wake();
 })();
