@@ -737,7 +737,10 @@ button { font: inherit; color: inherit; }
   font-size: 13px; color: var(--night-2);
 }
 .footer-row a { text-decoration: none; }
-@media (max-width: 640px) { .footer-mid { display: none; } }
+@media (max-width: 640px) {   /* phones keep just the Google link, on its own line under the others */
+  .footer-mid .fm-text { display: none; }
+  .footer-mid { order: 3; flex-basis: 100%; }
+}
 
 /* ═════════ Lightbox ═════════ */
 /* The player always fits the screen: the video shrinks to leave room for the title, blurb and Close (--lb-meta). */
