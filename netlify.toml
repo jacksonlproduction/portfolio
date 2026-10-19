@@ -1,6 +1,6 @@
 # Netlify: publish only the website itself (not the original font files, source photos or notes).
 [build]
-  command = "rm -rf dist && mkdir dist && cp -R index.html work.html robots.txt sitemap.xml assets fonts dist/ && rm -rf dist/fonts/src dist/assets/img/src"
+  command = "rm -rf dist && mkdir dist && cp -R index.html work.html robots.txt sitemap.xml favicon.ico site.webmanifest assets fonts dist/ && rm -rf dist/fonts/src dist/assets/img/src"
   publish = "dist"
 
 # Fonts, images and the 3D library rarely change, so browsers can keep them for a while.
