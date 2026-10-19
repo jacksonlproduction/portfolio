@@ -59,7 +59,10 @@
     announce();
   }
 
-  lb.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+  // Close on the X, the backdrop, or any empty space around the video (not the video, text or buttons)
+  lb.addEventListener('click', e => {
+    if (e.target.closest('[data-close]') || !e.target.closest('.lb-video, .lb-meta > div, .lb-actions')) close();
+  });
 
   // "Want one like this?": jump to the contact form with this project's type picked and a note started
   lbCta?.addEventListener('click', () => {

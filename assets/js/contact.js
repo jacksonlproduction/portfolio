@@ -93,9 +93,11 @@ const FORM_ENDPOINT = 'https://formspree.io/f/mnpjdbba';
   form.addEventListener('change', saveDraft);
 
   /* "Want one like this?" from the video player, on this page or arriving from work.html */
+  // project kinds (projects.js) → the form's five options
+  const KIND_TO_TYPE = { 'Hype edit': 'Hype edit', 'Short doc': 'Doc / story', Feature: 'Doc / story', Social: 'Social', Event: 'Event' };
   function prefill({ title, kind }) {
     if (kind) {
-      const i = form.querySelector(`input[name="type"][value="${CSS.escape(kind)}"]`);
+      const i = form.querySelector(`input[name="type"][value="${CSS.escape(KIND_TO_TYPE[kind] || 'Other')}"]`);
       if (i) i.checked = true;
     }
     const msg = el('cf-message');

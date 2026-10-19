@@ -45,21 +45,26 @@
       media.append(badge);
     }
 
-    const thumb = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
-    if (thumb && p.vertical) {
+    const thumbs = window.thumbSources ? window.thumbSources(p) : [];
+    // if no thumbnail loads, hide it and let the tinted backdrop show instead of a broken image
+    const hide = im => () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; };
+    if (thumbs.length && p.vertical) {
       // Shorts: blurred thumbnail fills the card, the vertical frame stands in the middle like a phone
       media.classList.add('vertical');
       const bg = document.createElement('img');
-      bg.src = thumb; bg.alt = ''; bg.loading = 'lazy'; bg.className = 'card-bg';
+      bg.alt = ''; bg.loading = 'lazy'; bg.className = 'card-bg';
       const phone = document.createElement('span'); phone.className = 'card-phone';
       const fg = document.createElement('img');
-      fg.src = thumb; fg.alt = ''; fg.loading = 'lazy';
+      fg.alt = ''; fg.loading = 'lazy';
       phone.append(fg);
       media.prepend(bg, phone);
-    } else if (thumb) {
+      window.loadThumb(bg, thumbs, hide(bg));
+      window.loadThumb(fg, thumbs, hide(fg));
+    } else if (thumbs.length) {
       const img = document.createElement('img');
-      img.src = thumb; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+      img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
       media.prepend(img);
+      window.loadThumb(img, thumbs, hide(img));
     }
     let video = null;
     if (p.preview) {
@@ -77,23 +82,24 @@
     meta.querySelector('.card-year').textContent = p.year || '';
     meta.querySelector('.card-kind').textContent = window.projectMeta ? window.projectMeta(p, ['client', 'kind']) : p.kind;
 
-    // if a thumbnail can't load, hide it and let the tinted backdrop show instead of a broken image
-    media.querySelectorAll('img').forEach(im => im.addEventListener('error', () => { im.style.display = 'none'; const ph = im.closest('.card-phone'); if (ph) ph.style.display = 'none'; }));
     btn.append(media, meta);
     li.append(btn);
     into.append(li);
-    btn.addEventListener('click', () => window.Lightbox && window.Lightbox.open(i));
+    btn.addEventListener('click', () => {
+      if (li.dataset.held) { delete li.dataset.held; return; }   // that was a press-and-hold preview, not a tap
+      if (window.Lightbox) window.Lightbox.open(i);
+    });
     return { p, i, li, media, video };
   }
   const topCards = grid ? TOP.map(p => makeCard(p, grid, true)) : [];
   const cards = allGrid ? P.map(p => makeCard(p, allGrid, false)) : [];   // the All work page (filters act on these)
   const everyCard = topCards.concat(cards);
 
-  /* ───────── Preview: hover on desktop, centre-of-screen on touch ───────── */
-  // On desktop, a short rest on a card plays its real video in place: a muted YouTube loop (ytloop.js).
-  const ytHover = canHover && !!window.YTLoop;
+  /* ───────── Preview: hover on desktop, press and hold on touch ───────── */
+  // A short rest on a card (or holding a finger on it) plays its real video in place: a muted YouTube loop (ytloop.js).
+  const ytOK = !!window.YTLoop;
   function startYT(c) {
-    if (!ytHover || c.yt || !c.p.youtube || c.p.preview) return;
+    if (!ytOK || c.yt || !c.p.youtube || c.p.preview) return;
     c.yt = window.YTLoop.create(c.p.youtube);
     const phone = c.media.querySelector('.card-phone');
     if (phone && phone.style.display !== 'none') phone.append(c.yt.el);
@@ -107,11 +113,11 @@
     y.el.classList.remove('live');
     setTimeout(() => y.destroy(), 400);
   }
-  function play(c) {
+  function play(c, delay = 350) {
     if (c.li.classList.contains('playing')) return;
     c.li.classList.add('playing');
     clearTimeout(c.ytTimer);
-    c.ytTimer = setTimeout(() => startYT(c), 350);
+    c.ytTimer = setTimeout(() => startYT(c), delay);
     if (c.video) {
       if (!c.video.src) c.video.src = c.p.preview;
       c.video.play().catch(() => {});
@@ -127,14 +133,33 @@
       c.media.addEventListener('pointerenter', () => play(c));
       c.media.addEventListener('pointerleave', () => stop(c));
     });
-  } else if (!reduce) {
-    const io = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        const c = everyCard.find(x => x.media === e.target);
-        if (c) (e.isIntersecting ? play : stop)(c);
+  } else {
+    // Touch: press and hold a card to preview it, let go to stop. A quick tap still opens the full video,
+    // and a finger that starts moving is a scroll, so it cancels the hold.
+    const HOLD_MS = 280;
+    everyCard.forEach(c => {
+      let timer = 0, sx = 0, sy = 0;
+      const cancel = () => { clearTimeout(timer); timer = 0; };
+      const release = () => { cancel(); if (c.li.classList.contains('held')) { c.li.classList.remove('held'); stop(c); } };
+      c.media.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse') return;
+        delete c.li.dataset.held;
+        sx = e.clientX; sy = e.clientY;
+        cancel();
+        timer = setTimeout(() => {
+          timer = 0;
+          c.li.dataset.held = '1';
+          c.li.classList.add('held');
+          play(c, 0);
+        }, HOLD_MS);
       });
-    }, { rootMargin: '-42% 0px -42% 0px' });
-    everyCard.forEach(c => io.observe(c.media));
+      c.media.addEventListener('pointermove', e => {
+        if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel();
+      });
+      c.media.addEventListener('pointerup', release);
+      c.media.addEventListener('pointercancel', () => { release(); delete c.li.dataset.held; });
+      c.media.addEventListener('contextmenu', e => e.preventDefault());   // no long-press menu
+    });
   }
 
   addEventListener('lightbox:change', e => { if (e.detail.open) everyCard.forEach(stop); });

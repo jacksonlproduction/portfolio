@@ -102,7 +102,8 @@
   let renderer;
   try {
     if (!window.THREE) throw new Error('three missing');
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    // Dense (Retina) screens already look smooth, so skip the costly edge-smoothing there.
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: (devicePixelRatio || 1) < 2, alpha: true, powerPreference: 'high-performance' });
   } catch (err) {
     hero.classList.add('no-webgl');
     canvas.remove();
@@ -110,7 +111,10 @@
     hintState = 'gone';
     return;
   }
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  // Render resolution: at most 1.5x (indistinguishable from 2x on a moving reel at a fraction of the work).
+  // If the computer still can't keep up, the loop below steps it down further (see "Adaptive quality").
+  let dpr = Math.min(devicePixelRatio || 1, 1.5);
+  renderer.setPixelRatio(dpr);
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.setClearColor(0x000000, 0);
 
@@ -174,7 +178,7 @@
     t.encoding = THREE.sRGBEncoding;
     t.wrapS = THREE.RepeatWrapping;
     t.repeat.set(N, 1);
-    t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     return t;
   }
   /* Motion blur: pictures and film edge smear along the direction of spin, scaled by speed.
@@ -232,7 +236,7 @@
     c.width = FW; c.height = FH;
     const tex = new THREE.CanvasTexture(c);
     tex.encoding = THREE.sRGBEncoding;
-    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
     const front = new THREE.Mesh(
       new THREE.CylinderGeometry(R + 0.006, R + 0.006, H_FRAME, 40, 1, true, -ARC / 2, ARC),
       addBlur(new THREE.MeshBasicMaterial({ map: tex, side: THREE.FrontSide }), blurFrame)
@@ -249,12 +253,12 @@
     pivot.add(lift);
     spin.add(pivot);
     const f = { p, i, c, g: c.getContext('2d'), tex, front, lift, pop: 0, play: 0, dim: 1, img: null, bg: null, fg: null, lastDraw: 0 };
-    const src = p.poster || (p.youtube ? `https://i.ytimg.com/vi/${encodeURIComponent(p.youtube)}/hqdefault.jpg` : '');
-    if (src) {
+    const thumbs = window.thumbSources ? window.thumbSources(p) : [];
+    if (thumbs.length) {
       const im = new Image();
       im.crossOrigin = 'anonymous';
-      im.onload = () => { f.img = im; bake(f); draw(f, performance.now() / 1000); };
-      im.src = src;
+      im.addEventListener('load', () => { if (im.naturalWidth > 120) { f.img = im; bake(f); draw(f, performance.now() / 1000); } });
+      window.loadThumb(im, thumbs);
     }
     return f;
   });
@@ -351,6 +355,7 @@
 
   // Composite one frame of "footage": background, drifting light leak, grain, then text on top.
   let grainTick = 0;
+  let dirty = true;   // the scene only re-renders when something on it actually changed
   function draw(f, t) {
     if (!f.bg) bake(f);
     const { g, i } = f;
@@ -378,6 +383,7 @@
     }
     f.lastDraw = t;
     f.tex.needsUpdate = true;
+    dirty = true;
   }
 
   frames.forEach(f => draw(f, 0));
@@ -462,6 +468,7 @@
   /* ───────── Sizing ───────── */
   let W = 0, H = 0, radiusPx = 400;
   function resize() {
+    dirty = true;
     W = hero.clientWidth; H = hero.clientHeight;
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
@@ -510,7 +517,14 @@
   canvas.addEventListener('pointerdown', e => {
     if (e.button !== 0) return;
     if (e.pointerType === 'mouse') dismissHint();   // on touch, wait to see if it's a drag/tap or a page scroll
-    pressed = hovered;   // remember which frame was under the pointer when the press started
+    // remember which frame is under the finger/pointer as the press starts. Touch has no hover beforehand,
+    // so find the frame right here rather than relying on the last hover.
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    camera.updateMatrixWorld();
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(hitTargets, false)[0];
+    pressed = hit ? hit.object.userData.index : -1;
     dragging = true; moved = 0; vel = 0; carry = 0;
     dragAngle = angle;
     isTouch = e.pointerType !== 'mouse';
@@ -585,6 +599,25 @@
   const lerp = (a, b, k) => a + (b - a) * k;
   const glowBoost = hero.querySelector('.hero-glow-boost');
   let running = true, raf = 0, prevRot = angle, boost = 0, lastBoost = -1, lastT = 0, blurSm = 0;
+  let lastRot = NaN, lastScale = NaN, lastTiltX = NaN, mouseMoved = true;
+  canvas.addEventListener('pointermove', () => { mouseMoved = true; }, { passive: true });
+  addEventListener('scroll', () => { mouseMoved = true; }, { passive: true });   // the page moved under a still pointer
+  // Adaptive quality: if rendering keeps running slow (under ~38fps), lower the resolution a step at a time.
+  const DPR_STEPS = [1.5, 1.25, 1, 0.85, 0.75];
+  let slowSum = 0, slowN = 0, prevRenderAt = 0, startedAt = performance.now();
+  function checkSpeed(nowMs) {
+    const gap = prevRenderAt ? nowMs - prevRenderAt : 0;
+    prevRenderAt = nowMs;
+    if (!gap || gap > 250 || nowMs - startedAt < 1500) return;   // ignore start-up and tab-switch pauses
+    slowSum += gap; slowN++;
+    if (slowN < 40) return;
+    const avg = slowSum / slowN;
+    slowSum = 0; slowN = 0;
+    if (avg > 26) {
+      const next = DPR_STEPS.find(d => d < dpr - 0.01);
+      if (next) { dpr = next; renderer.setPixelRatio(dpr); resize(); }
+    }
+  }
 
   function frame(nowMs) {
     raf = requestAnimationFrame(frame);
@@ -606,6 +639,7 @@
         if (Math.abs(vel) <= 0.0015) { vel = 0; target = snap(angle + carry); }
       } else if (!carry) {
         angle = lerp(angle, target, ease(0.075));
+        if (Math.abs(target - angle) < 1e-5) angle = target;   // land exactly, so a resting reel stops re-rendering
       }
     }
     // autoplay: advance one frame every few seconds when nobody is touching it
@@ -628,13 +662,22 @@
       hint.style.transform = `translate3d(${((hintPos.x + 1) / 2 * W).toFixed(1)}px, ${((1 - hintPos.y) / 2 * H).toFixed(1)}px, 0)`;
     }
 
-    // intro settle
-    tilt.scale.setScalar(lerp(tilt.scale.x, 1, ease(0.045)));
-    tilt.rotation.x = lerp(tilt.rotation.x, TILT.x, ease(0.045));
+    // intro settle (snaps once close, so a settled reel stops changing)
+    const sc = lerp(tilt.scale.x, 1, ease(0.045));
+    tilt.scale.setScalar(Math.abs(sc - 1) < 1e-4 ? 1 : sc);
+    const rx = lerp(tilt.rotation.x, TILT.x, ease(0.045));
+    tilt.rotation.x = Math.abs(rx - TILT.x) < 1e-5 ? TILT.x : rx;
 
-    // hover
-    hovered = -1;
-    if (pointerIn && !dragging && !lbOpen) {
+    // has the reel itself moved since the last render?
+    const rotNow = spin.rotation.y;
+    const reelMoved = rotNow !== lastRot || tilt.scale.x !== lastScale || tilt.rotation.x !== lastTiltX;
+    if (reelMoved) { dirty = true; lastRot = rotNow; lastScale = tilt.scale.x; lastTiltX = tilt.rotation.x; }
+
+    // hover (only re-checked when the pointer or the reel moved)
+    if (!pointerIn || dragging || lbOpen) hovered = -1;
+    else if (mouseMoved || reelMoved) {
+      mouseMoved = false;
+      hovered = -1;
       camera.updateMatrixWorld();
       ray.setFromCamera(mouse, camera);
       const hit = ray.intersectObjects(hitTargets, false)[0];
@@ -653,15 +696,19 @@
       if (want !== dwellFor) { dwellFor = want; dwellSince = nowMs; }
       if (clip && want !== clipFor) stopClip();
       if (want >= 0 && !clip && nowMs - dwellSince > CLIP_DWELL) startClip(want);
-      if (clip) placeClip();
+      if (clip && (dirty || !clip.placed)) { placeClip(); clip.placed = true; }
     }
 
+    const near = (v, goal, eps) => (Math.abs(v - goal) < eps ? goal : v);
     for (const f of frames) {
       const isHover = f.i === hovered;
-      f.pop = lerp(f.pop, isHover ? 1 : 0, ease(0.12));
+      const pop = near(lerp(f.pop, isHover ? 1 : 0, ease(0.12)), isHover ? 1 : 0, 1e-3);
+      const dimGoal = hovered >= 0 && !isHover ? 0.5 : 1;
+      const dim = near(lerp(f.dim, dimGoal, ease(0.1)), dimGoal, 1e-3);
+      if (pop !== f.pop || dim !== f.dim) dirty = true;
+      f.pop = pop; f.dim = dim;
       f.lift.position.z = f.pop * 0.2;
       f.lift.scale.setScalar(1 + f.pop * 0.035);
-      f.dim = lerp(f.dim, hovered >= 0 && !isHover ? 0.5 : 1, ease(0.1));
       f.front.material.color.setScalar(f.dim);
       const wantPlay = isHover || (hovered < 0 && settled && f.i === fi) ? 1 : 0;
       f.play = lerp(f.play, wantPlay, ease(0.08));
@@ -677,6 +724,8 @@
 
     // motion blur like a film camera's 180° shutter at 24fps (1/48s of motion); slow drifts stay sharp
     blurSm = lerp(blurSm, reduce ? 0 : Math.min(0.14, Math.max(0, omega - 0.35) / 48), ease(0.35));
+    if (blurSm < 1e-5) blurSm = 0;
+    if (blurSm !== blurFrame.value * ARC) dirty = true;
     blurFrame.value = blurSm / ARC;
     blurBand.value = blurSm / (Math.PI * 2) * N;
 
@@ -684,7 +733,11 @@
     boost = lerp(boost, Math.min(1, omega * 0.35 + (hovered >= 0 ? 0.35 : 0)), ease(0.08));
     if (glowBoost && Math.abs(boost - lastBoost) > 0.01) { glowBoost.style.opacity = boost.toFixed(3); lastBoost = boost; }
 
-    renderer.render(scene, camera);
+    if (dirty) {
+      dirty = false;
+      renderer.render(scene, camera);
+      checkSpeed(nowMs);
+    } else prevRenderAt = 0;   // idle frames don't count toward the speed check
   }
 
   function setRunning(on) {
@@ -692,6 +745,7 @@
     running = on;
     if (!on && typeof stopClip === 'function') stopClip();
     lastT = 0;
+    dirty = true;
     if (on) raf = requestAnimationFrame(frame);
     else cancelAnimationFrame(raf);
   }
