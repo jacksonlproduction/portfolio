@@ -74,7 +74,7 @@
       dispatchEvent(new CustomEvent('contact:prefill', { detail }));
       document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      location.href = `index.html?like=${encodeURIComponent(detail.title)}&kind=${encodeURIComponent(detail.kind)}#contact`;
+      location.href = `/?like=${encodeURIComponent(detail.title)}&kind=${encodeURIComponent(detail.kind)}#contact`;
     }
   });
   addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
