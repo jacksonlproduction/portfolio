@@ -98,6 +98,45 @@
   }
   setNow(0);
 
+  /* ───────── Light version for computers that can't run the 3D reel ─────────
+     Shown when WebGL is missing, when the browser would draw 3D without the graphics card
+     (software rendering, which crawls), or when the reel still runs slowly at its lowest quality.
+     The reel's frames become a scrollable strip of thumbnails, and html.lite turns off the
+     heaviest visual effects. Add ?lite or ?full to the address to force either version. */
+  const params = new URLSearchParams(location.search);
+  let lite = false;
+  function showFallback() {
+    if (lite) return;
+    lite = true;
+    hero.classList.add('no-webgl');
+    document.documentElement.classList.add('lite');
+    canvas.remove();
+    if (hint) hint.remove();
+    hintState = 'gone';
+    list.querySelectorAll('li').forEach((li, i) => {
+      const thumbs = window.thumbSources ? window.thumbSources(SRC[i]) : [];
+      if (!thumbs.length || li.querySelector('img')) return;
+      const im = document.createElement('img');
+      im.alt = ''; im.loading = 'lazy'; im.decoding = 'async';
+      li.querySelector('button').prepend(im);
+      window.loadThumb(im, thumbs, () => im.remove());
+    });
+  }
+  function slowGraphics() {
+    if (params.has('full')) return false;
+    if (params.has('lite')) return true;
+    try {
+      const gl = document.createElement('canvas').getContext('webgl', { failIfMajorPerformanceCaveat: true });
+      if (!gl) return true;   // no WebGL, or only a slow software version of it
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      const name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+      const lose = gl.getExtension('WEBGL_lose_context');
+      if (lose) lose.loseContext();
+      return /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i.test(name);
+    } catch (e) { return false; }
+  }
+  if (slowGraphics()) { showFallback(); return; }
+
   /* ───────── WebGL setup ───────── */
   let renderer;
   try {
@@ -105,10 +144,7 @@
     // Dense (Retina) screens already look smooth, so skip the costly edge-smoothing there.
     renderer = new THREE.WebGLRenderer({ canvas, antialias: (devicePixelRatio || 1) < 2, alpha: true, powerPreference: 'high-performance' });
   } catch (err) {
-    hero.classList.add('no-webgl');
-    canvas.remove();
-    if (hint) hint.remove();
-    hintState = 'gone';
+    showFallback();
     return;
   }
   // Render resolution: at most 1.5x (indistinguishable from 2x on a moving reel at a fraction of the work).
@@ -616,6 +652,7 @@
     if (avg > 26) {
       const next = DPR_STEPS.find(d => d < dpr - 0.01);
       if (next) { dpr = next; renderer.setPixelRatio(dpr); resize(); }
+      else if (avg > 50 && !params.has('full')) goLite();   // under ~20fps even at the lowest quality
     }
   }
 
@@ -740,6 +777,15 @@
     } else prevRenderAt = 0;   // idle frames don't count toward the speed check
   }
 
+  // Give up on the 3D reel for good and switch to the light version.
+  function goLite() {
+    setRunning(false);
+    if (typeof stopClip === 'function') stopClip();
+    if (clipLayer) clipLayer.remove();
+    renderer.dispose();
+    showFallback();
+  }
+
   function setRunning(on) {
     if (on === running) return;
     running = on;
@@ -750,7 +796,7 @@
     else cancelAnimationFrame(raf);
   }
   // The reel pauses while offscreen, while the tab is hidden, and while a project is open on top of it.
-  var syncRunning = () => setRunning(onScreen && !document.hidden && !lbOpen);
+  var syncRunning = () => setRunning(!lite && onScreen && !document.hidden && !lbOpen);
   raf = requestAnimationFrame(frame);
   let onScreen = true;
   new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; syncRunning(); }).observe(hero);

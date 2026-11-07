@@ -307,13 +307,21 @@ button { font: inherit; color: inherit; }
 }
 .no-webgl .reel-fallback {
   position: relative; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal;
-  grid-row: 2; align-self: center; z-index: 1;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
+  grid-row: 2; align-self: center; z-index: 1; min-width: 0;
+  /* light version: the reel's frames as a sideways-scrolling strip of thumbnails */
+  display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; scrollbar-width: thin;
 }
+.no-webgl .reel-fallback li { flex: 0 0 clamp(210px, 26vw, 320px); scroll-snap-align: start; }
 .reel-fallback button {
   width: 100%; text-align: left; padding: 14px; border: 1px solid rgba(255, 255, 255, .15);
-  border-radius: 10px; background: rgba(255, 255, 255, .04); cursor: pointer; display: grid; gap: 2px;
+  border-radius: 10px; background: rgba(255, 255, 255, .04); cursor: pointer; display: grid; gap: 2px; color: inherit;
 }
+.reel-fallback img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 6px; margin-bottom: 10px; background: #111; }
+.no-webgl .hero-hint, .no-webgl .now-showing { visibility: hidden; }   /* they describe the 3D reel */
+/* light version: drop the effects that are hardest on slow graphics */
+.lite *, .lite *::before, .lite *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.lite .hero-glow { animation: glow-in 2.2s var(--ease-out) both; }
+.lite .hero-copy, .lite.js .rv { filter: none; }
 .reel-fallback b { font-weight: 600; letter-spacing: -.02em; }
 .reel-fallback i { font-family: var(--f-serif); color: var(--night-2); }
 
