@@ -26,7 +26,7 @@
       modestbranding: 1, iv_load_policy: 3, disablekb: 1, fs: 0, enablejsapi: 1, widget_referrer: location.href,
     });
     if (ORIGIN) q.set('origin', ORIGIN);
-    f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?${q}`;
+    f.src = `https://www.youtube.com/embed/${encodeURIComponent(id)}?${q}`;
     f.title = '';
     f.tabIndex = -1;
     f.allow = 'autoplay; encrypted-media';
