@@ -112,10 +112,30 @@
 </head>
 <body>
   <script>
-    // Signature intro: once per visit, never with reduced motion or when arriving at a #section.
+    // Light version: decided first, for computers that can't run the 3D reel well (no WebGL, or the
+    // browser would draw 3D without the graphics card). Adds html.lite; hero-reel.js shows the thumbnail
+    // strip instead of the reel. ?lite / ?full in the address force either version.
+    (function () {
+      var q = location.search, lite = false;
+      if (/[?&]lite\b/.test(q)) lite = true;
+      else if (!/[?&]full\b/.test(q)) {
+        try {
+          var gl = document.createElement('canvas').getContext('webgl', { failIfMajorPerformanceCaveat: true });
+          if (!gl) lite = true;
+          else {
+            var info = gl.getExtension('WEBGL_debug_renderer_info');
+            var name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+            if (/swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i.test(name)) lite = true;
+            var lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+          }
+        } catch (e) {}
+      }
+      if (lite) document.documentElement.classList.add('lite');
+    })();
+    // Signature intro: once per visit, never with reduced motion, when arriving at a #section, or in the light version.
     // Safety net: if intro.js never runs, the hero shows anyway after 6s (intro.js cancels this once it starts).
     try {
-      if (!sessionStorage.getItem('jl-intro') && !location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (!document.documentElement.classList.contains('lite') && !sessionStorage.getItem('jl-intro') && !location.hash && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         document.documentElement.classList.add('intro-on');
         window.__introSafety = setTimeout(function () { document.documentElement.classList.remove('intro-on'); }, 6000);
       }

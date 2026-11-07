@@ -122,20 +122,8 @@
       window.loadThumb(im, thumbs, () => im.remove());
     });
   }
-  function slowGraphics() {
-    if (params.has('full')) return false;
-    if (params.has('lite')) return true;
-    try {
-      const gl = document.createElement('canvas').getContext('webgl', { failIfMajorPerformanceCaveat: true });
-      if (!gl) return true;   // no WebGL, or only a slow software version of it
-      const info = gl.getExtension('WEBGL_debug_renderer_info');
-      const name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
-      const lose = gl.getExtension('WEBGL_lose_context');
-      if (lose) lose.loseContext();
-      return /swiftshader|llvmpipe|softpipe|software|basic render|microsoft basic/i.test(name);
-    } catch (e) { return false; }
-  }
-  if (slowGraphics()) { showFallback(); return; }
+  // the inline script at the top of index.html already checked the graphics and set html.lite
+  if (document.documentElement.classList.contains('lite')) { showFallback(); return; }
 
   /* ───────── WebGL setup ───────── */
   let renderer;
