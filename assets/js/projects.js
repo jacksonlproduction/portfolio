@@ -8,12 +8,13 @@
 //   blurb        — optional one-line pitch shown under the title in the player.
 //   youtube      — the video ID from the link (the part after "v=", "youtu.be/" or "shorts/").
 //   vertical     — true for Shorts / 9:16 videos (shown in a phone-shaped frame and a tall player).
+//   aspect       — optional width ÷ height for wide videos that aren't 16:9, e.g. 1.5 for 3:2 open gate (sizes the player).
 //   poster       — optional still image instead of the YouTube thumbnail.
 //   preview      — optional short silent .mp4 loop that plays when someone hovers the card.
 //   tint         — two colours for the backdrop while the thumbnail loads.
 window.PROJECTS = [
   { title: 'Wales', client: '', kind: 'Travel edit', top: true, featured: true, stat: '160K views on TikTok', blurb: 'A travel edit from a trip across Wales that took off on TikTok, passing 160,000 views.', year: '', length: '', youtube: 'ZgR1h7l1MBs', vertical: false, poster: '', preview: '', tint: ['#1f2d26', '#070908'] },
-  { title: 'Mike Sherm, Live at PARQ', client: 'Odysea Events', kind: 'Event', top: true, stat: 'Worked with Mike Sherm', blurb: "A cinematic recap of Mike Sherm's night at PARQ Nightclub in San Diego for Odysea Events: haze, lights, a packed floor and every big moment.", year: '', length: '', youtube: 'uYPY04LMrjI', vertical: true, poster: '', preview: '', tint: ['#2a1418', '#0a0607'] },
+  { title: 'Mike Sherm, Live at PARQ', client: 'Odysea Events', kind: 'Event', top: true, stat: 'Worked with Mike Sherm', blurb: "A cinematic recap of Mike Sherm's night at PARQ Nightclub in San Diego for Odysea Events: haze, lights, a packed floor and every big moment.", year: '', length: '', youtube: 'uYPY04LMrjI', vertical: false, aspect: 1.5, poster: '', preview: '', tint: ['#2a1418', '#0a0607'] },
   { title: 'Blueface, Live in San Diego', client: '', kind: 'Event', top: true, stat: 'Worked with Blueface', blurb: 'Filmed rapper Blueface performing at an intimate party in San Diego: up-close, high-energy coverage that puts you right in the room.', year: '', length: '', youtube: '6BGbgoKNAbc', vertical: true, poster: '', preview: '', tint: ['#13233f', '#06080d'] },
   { title: 'Devin', client: 'Carlsbad High', kind: 'Short doc', blurb: 'A short documentary on Devin Adams, a Carlsbad High student with special needs, and the people and moments that make up his world.', year: '', length: '', youtube: 'ovH4jUSC23k', vertical: false, poster: '', preview: '', tint: ['#23313a', '#090909'] },
   { title: 'Back in Black', client: 'Carlsbad High Football', kind: 'Hype edit', year: '', length: '', youtube: 'XrILXU8Qkow', vertical: false, poster: '', preview: '', tint: ['#2a2a2a', '#070707'] },

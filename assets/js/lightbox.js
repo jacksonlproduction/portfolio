@@ -25,6 +25,8 @@
     if (lbBlurb) { lbBlurb.textContent = p.blurb || ''; lbBlurb.hidden = !p.blurb; }
     lbVideo.replaceChildren();
     lbVideo.classList.toggle('vertical', !!p.vertical);   // Shorts play in a tall 9:16 player
+    if (p.aspect && !p.vertical) lbVideo.style.setProperty('--ar', p.aspect);   // e.g. 3:2 open gate
+    else lbVideo.style.removeProperty('--ar');
     if (p.youtube) {
       const f = document.createElement('iframe');
       f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(p.youtube)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
