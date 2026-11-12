@@ -9,6 +9,7 @@
   const lbKind = document.getElementById('lb-kind');
   const lbBlurb = document.getElementById('lb-blurb');
   const lbCta = document.getElementById('lb-cta');
+  const lbYt = document.getElementById('lb-yt');
   let isOpen = false, lastFocus = null, current = null;
 
   function announce() {
@@ -25,9 +26,17 @@
     if (lbBlurb) { lbBlurb.textContent = p.blurb || ''; lbBlurb.hidden = !p.blurb; }
     lbVideo.replaceChildren();
     lbVideo.classList.toggle('vertical', !!p.vertical);   // Shorts play in a tall 9:16 player
+    if (p.aspect && !p.vertical) lbVideo.style.setProperty('--ar', p.aspect);   // e.g. 3:2 open gate
+    else lbVideo.style.removeProperty('--ar');
+    // backup link in case YouTube blocks the embedded player (e.g. its bot check on VPNs)
+    if (lbYt) {
+      lbYt.hidden = !p.youtube;
+      if (p.youtube) lbYt.href = p.vertical ? `https://www.youtube.com/shorts/${encodeURIComponent(p.youtube)}` : `https://www.youtube.com/watch?v=${encodeURIComponent(p.youtube)}`;
+    }
     if (p.youtube) {
       const f = document.createElement('iframe');
-      f.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(p.youtube)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+      // regular youtube.com: the no-cookie domain treats everyone as signed out, which triggers YouTube's bot check more often
+      f.src = `https://www.youtube.com/embed/${encodeURIComponent(p.youtube)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
       f.title = p.title;
       f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
       f.allowFullscreen = true;
@@ -45,7 +54,7 @@
     lb.hidden = false;
     isOpen = true;
     document.documentElement.style.overflow = 'hidden';
-    lb.querySelector('.lb-close').focus({ preventScroll: true });
+    lb.querySelector('button.lb-close').focus({ preventScroll: true });
     announce();
   }
 
@@ -59,7 +68,10 @@
     announce();
   }
 
-  lb.addEventListener('click', e => { if (e.target.closest('[data-close]')) close(); });
+  // Close on the X, the backdrop, or any empty space around the video (not the video, text or buttons)
+  lb.addEventListener('click', e => {
+    if (e.target.closest('[data-close]') || !e.target.closest('.lb-video, .lb-meta > div, .lb-actions')) close();
+  });
 
   // "Want one like this?": jump to the contact form with this project's type picked and a note started
   lbCta?.addEventListener('click', () => {
@@ -71,7 +83,7 @@
       dispatchEvent(new CustomEvent('contact:prefill', { detail }));
       document.getElementById('contact').scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      location.href = `index.html?like=${encodeURIComponent(detail.title)}&kind=${encodeURIComponent(detail.kind)}#contact`;
+      location.href = `/?like=${encodeURIComponent(detail.title)}&kind=${encodeURIComponent(detail.kind)}#contact`;
     }
   });
   addEventListener('keydown', e => { if (e.key === 'Escape') close(); });

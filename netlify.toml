@@ -1,6 +1,6 @@
-# Netlify: publish only the website itself (not the original font files, source photos or notes).
+# Netlify: publish only the website itself (build.sh skips the original font files, source photos and notes).
 [build]
-  command = "rm -rf dist && mkdir dist && cp -R index.html work.html assets fonts dist/ && rm -rf dist/fonts/src dist/assets/img/src"
+  command = "sh build.sh"
   publish = "dist"
 
 # Fonts, images and the 3D library rarely change, so browsers can keep them for a while.
